@@ -1,0 +1,931 @@
+%% ================== ISO WG21 C++ PROPOSAL: TYPE UTILITIES ================= %% 
+%% Name:            p0000.tex
+%% Description:     Type utilities wording draft
+%% Creator:         Vincent Reverdy
+%% Contributors:    Vincent Reverdy [2018]
+%% License:         BSD 3-Clause License
+%% ========================================================================== %%
+
+
+
+%% =============================== PARAMETERS =============================== %%
+% DOCUMENT PARAMETERS
+\newcommand{\docno}{P0000R0}
+\newcommand{\prevdocno}{P0000R0}
+\newcommand{\doctitle}{A few additional type manipulation utilities}
+\newcommand{\docauthor}{Vincent Reverdy}
+\newcommand{\doccoauthor}{Robert J. Brunner}
+\newcommand{\presfile}{p0000_presentation.pdf}
+\newcommand{\reldate}{\today}
+\newcommand{\firstlibchapter}{language.support}
+\newcommand{\lastlibchapter}{thread}
+%% ========================================================================== %%
+
+
+
+%% ============================== CONFIGURATION ============================= %%
+% DOCUMENT TYPE 
+% \documentclass[letterpaper,oneside,openany]{memoir}
+\documentclass[ebook,10pt,oneside,openany,final]{memoir}
+% \includeonly{declarations}
+
+% PACKAGES
+\usepackage[american]{babel}
+\usepackage[iso,american]{isodate}
+\usepackage[final]{listings}
+\usepackage{longtable}
+\usepackage{ltcaption}
+\usepackage{relsize}
+\usepackage{textcomp}
+\usepackage{underscore}
+\usepackage{parskip}
+\usepackage{array}
+\usepackage[normalem]{ulem}
+\usepackage{enumitem}
+\usepackage{color}
+\usepackage{amsmath}
+\usepackage{mathrsfs}
+\usepackage{microtype}
+\usepackage{multicol}
+\usepackage{xspace}
+\usepackage{lmodern}
+\usepackage[T1]{fontenc}
+\usepackage[pdftex, final]{graphicx}
+\usepackage[final]{pdfpages}
+\usepackage[pdftex,
+            pdftitle={\docno},
+            pdfsubject={\doctitle},
+            pdfcreator={\docauthor},
+            bookmarks=true,
+            bookmarksnumbered=true,
+            pdfpagelabels=true,
+            pdfpagemode=UseOutlines,
+            pdfstartview=FitH,
+            linktocpage=true,
+            colorlinks=true,
+            linkcolor=blue,
+            plainpages=false
+           ]{hyperref}
+\usepackage{memhfixc}
+\usepackage[active,
+            header=false,
+            handles=false,
+            copydocumentclass=false,
+            generate=std-gram.ext,
+            extract-cmdline={gramSec},
+            extract-env={bnftab,simplebnf,bnf,bnfkeywordtab}
+            ]{extract}
+
+% COMMANDS
+\renewcommand\RSsmallest{5.5pt}
+
+% STYLE
+\input{layout}
+\input{styles}
+\input{macros}
+\input{tables}
+
+% INDEX
+\makeindex[generalindex]
+\makeindex[libraryindex]
+\makeindex[grammarindex]
+\makeindex[impldefindex]
+\makeglossary[xrefindex]
+
+% HYPERREF FIXES
+\pdfstringdefDisableCommands{\def\smaller#1{#1}}
+\pdfstringdefDisableCommands{\def\textbf#1{#1}}
+\pdfstringdefDisableCommands{\def\raisebox#1{}}
+\pdfstringdefDisableCommands{\def\hspace#1{}}
+
+% HYPHENATION
+\hyphenation{tem-plate ex-am-ple in-put-it-er-a-tor name-space non-zero}
+
+% LIGATURES
+\DisableLigatures{encoding = T1, family = tt*}
+
+% TABLES
+\newenvironment{libreqtab2b}[2]
+{
+ \begin{LongTable}
+ {#1}{#2}
+ {x{.34\hsize}x{.60\hsize}}
+}
+{
+ \end{LongTable}
+}
+%% ========================================================================== %%
+
+
+
+%% ================================ DOCUMENT ================================ %%
+% DOCUMENT BEGINNING
+\begin{document}
+
+\thispagestyle{empty}
+\begingroup
+\def\hd{%
+    \begin{tabular}{ll}
+    \textbf{Document number:} & \docno \\
+    \textbf{Revises:}         & \prevdocno \\
+    \textbf{Date:}            & \reldate \\
+    \textbf{Project:}         & ISO JTC1/SC22/WG21: Programming Language C++ \\
+    \textbf{Audience:}        & LEWG \\
+    \textbf{Reply to:}        & \docauthor~{}and \doccoauthor \\
+                              & University of Illinois at Urbana-Champaign \\
+                              & vince.rev@gmail.com
+    \end{tabular}
+}
+\newlength{\hdwidth}
+\settowidth{\hdwidth}{\hd}
+\begin{minipage}{\hdwidth}\hd\end{minipage}
+\endgroup
+
+\vspace{2.5cm}
+\begin{center}
+\textbf{\Huge\doctitle}
+\end{center}
+\vfill
+\textbf{Note: this is an early draft. It's known to be incomplet and
+  incorrekt, and it has lots of
+  b\kern-1.2pta\kern1ptd\hspace{1.5em}for\kern-3ptmat\kern0.6ptti\raise0.15ex\hbox{n}g.}
+\newpage
+
+\chapterstyle{cppstd}
+\pagestyle{cpppage}
+%% -------------------------------------------------------------------------- %%
+% FRONT MATTER
+\frontmatter
+
+\chapter*{Abstract}
+We introduce additional type traits to the standard library. Most of these types traits have been used again and again in the implementation of a library dedicated to the creation of custom overload sets that will be proposed for standardization in a separate proposal. These type traits focus on fives domains: the removal of several pointers, the manipulation of qualifiers, the use of conditional inheritance, the categorization of callable types, and a few additional type aliases and template variables as metaprogramming helpers.
+
+\phantomsection
+\setcounter{tocdepth}{2}
+\pdfbookmark{\contentsname}{toctarget}
+\hypertarget{toctarget}{\tableofcontents*}
+%% -------------------------------------------------------------------------- %%
+% MAIN MATTER
+\mainmatter
+\setglobalstyles
+%% -------------------------------------------------------------------------- %%
+% PROPOSAL
+\rSec0[proposal]{Proposal}
+%% -------------------------------------------------------------------------- %%
+\rSec1[proposal.intro]{Introduction}
+
+Since their introduction with C++11, the type traits of the standard library have been of great help for template metaprogramming. They contributed to the standardization of common metaprogramming patterns, such as SFINAE with \tcode{enable_if}, and since C++17 with \tcode{void_t}. In this paper, we introduce new type traits corresponding to metaprogramming patterns that turned out to be very useful for the implementation of a tool to build custom overload sets. This tool will be proposed for standardization in a separate paper. We believe that the listed type traits are of common use and could benefit the entire community. The new type traits focus on the five following areas:
+\begin{itemize}
+\item removal of all pointers: \tcode{remove_all_pointers} inspired from \tcode{remove_all_extents}
+\item manipulation of qualifiers: \tcode{copy_*} and \tcode{clone_*} type traits
+\item conditional inheritance: \tcode{blank} struct helper, \tcode{is_inheritable} and \tcode{inherit_if}
+\item callable categorization: \tcode{is_closure}, \tcode{is_functor}, \tcode{is_function_object} and \tcode{is_callable}
+\item utility type aliases and template variables: \tcode{index_constant}, \tcode{type_t}, \tcode{false_v} and \tcode{true_v}
+\end{itemize}
+%% -------------------------------------------------------------------------- %%
+\rSec1[proposal.impact]{Impact on the standard}
+This proposal is a pure library extension. It does not require changes to any standard classes or functions. All the extensions belong to the \tcode{<type_traits>} header.
+%% -------------------------------------------------------------------------- %%
+\rSec1[proposal.design]{Motivations and design decisions}
+%% -------------------------------------------------------------------------- %%
+\rSec2[proposal.design.ptr]{Pointers removal}
+
+\begin{codeblock}
+// Pointers removal
+template <class T> struct remove_all_pointers;
+
+// Type alias
+template <class T> using remove_all_pointers_t = typename remove_all_pointers<T>::type;
+\end{codeblock}
+
+The current standard library includes two type traits to manipulate extents: \tcode{remove_extent} which removes the first array dimension, and \tcode{remove_all_extents} which removes all dimensions. However, for pointers, only one is provided: \tcode{remove_pointer} which removes one pointer. However for the same reason that it can be useful to remove all dimensions, it can sometimes be useful to remove all pointers and access the ``raw'' type. Also, in the context of qualifiers manipulation (see (\ref{proposal.design.qual})), it makes sense to provide tools to transform a \tcode{int***} into a \tcode{double***} by transferring all pointers from one type to another: \tcode{copy_all_pointers} and \tcode{clone_all_pointers}. In this context, being able to remove all pointers seems to be a natural addition to the standard library, for completeness. For all these reasons, we propose to introduce the type trait: \tcode{remove_all_pointers}.
+%% -------------------------------------------------------------------------- %%
+\rSec2[proposal.design.qual]{Qualifiers manipulation}
+
+\begin{codeblock}
+// Qualifiers manipulation
+template <class From, class To> struct copy_const;
+template <class From, class To> struct clone_const;
+template <class From, class To> struct copy_volatile;
+template <class From, class To> struct clone_volatile;
+template <class From, class To> struct copy_cv;
+template <class From, class To> struct clone_cv;
+template <class From, class To> struct copy_reference;
+template <class From, class To> struct clone_reference;
+template <class From, class To> struct copy_signedness;
+template <class From, class To> struct copy_extent;
+template <class From, class To> struct clone_extent;
+template <class From, class To> struct copy_all_extents;
+template <class From, class To> struct clone_all_extents;
+template <class From, class To> struct copy_pointer;
+template <class From, class To> struct clone_pointer;
+template <class From, class To> struct copy_all_pointers;
+template <class From, class To> struct clone_all_pointers;
+template <class From, class To> struct copy_cvref;
+template <class From, class To> struct clone_cvref;
+
+// Type aliases
+template <class F, class T> using copy_const_t = typename copy_const<F, T>::type;
+template <class F, class T> using clone_const_t = typename clone_const<F, T>::type;
+template <class F, class T> using copy_volatile_t = typename copy_volatile<F, T>::type;
+template <class F, class T> using clone_volatile_t = typename clone_volatile<F, T>::type;
+template <class F, class T> using copy_cv_t = typename copy_cv<F, T>::type;
+template <class F, class T> using clone_cv_t = typename clone_cv<F, T>::type;
+template <class F, class T> using copy_reference_t = typename copy_reference<F, T>::type;
+template <class F, class T> using clone_reference_t = typename clone_reference<F, T>::type;
+template <class F, class T> using copy_signedness_t = typename copy_signedness<F, T>::type;
+template <class F, class T> using copy_extent_t = typename copy_extent<F, T>::type;
+template <class F, class T> using clone_extent_t = typename clone_extent<F, T>::type;
+template <class F, class T> using copy_all_extents_t = typename copy_all_extents<F, T>::type;
+template <class F, class T> using clone_all_extents_t = typename clone_all_extents<F, T>::type;
+template <class F, class T> using copy_pointer_t = typename copy_pointer<F, T>::type;
+template <class F, class T> using clone_pointer_t = typename clone_pointer<F, T>::type;
+template <class F, class T> using copy_all_pointers_t = typename copy_all_pointers<F, T>::type;
+template <class F, class T> using clone_all_pointers_t = typename clone_all_pointers<F, T>::type;
+template <class F, class T> using copy_cvref_t = typename copy_cvref<F, T>::type;
+template <class F, class T> using clone_cvref_t = typename clone_cvref<F, T>::type;
+\end{codeblock}
+
+
+In the heavy template metaprogramming involved in the building of custom overload sets, one pattern happened to be very useful: being able to transfer the qualifiers of one type to another one. For example, to transform a \tcode{const int\&} into a \tcode{const double\&}, a \tcode{int[1][2][3]} into a \tcode{double[1][2][3]}, or an \tcode{int***} to a \tcode{double***}. It can be also used in a function taking a universal reference as an input, to qualify another type based on the qualification of the input:
+\begin{codeblock}
+template <class T> void f(T&& x) {
+    // An integer with the same qualification as the input
+    using integer = std::copy_cvref_t<T&&, int>;
+    /* function contents */
+}
+\end{codeblock}
+or to make a type \tcode{const} depending on another type:
+\begin{codeblock}
+template <class T> struct foo {
+    // Data members
+    T a;
+    std::copy_const_t<T, int> n;
+    std::copy_const_t<T, double> x;
+    /* class contents */
+};
+\end{codeblock}
+Another uses are illustrated in \href{http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0847r0.html}{P0847R0}, where \tcode{copy_cvref_t} is called \tcode{like_t}.
+
+For completeness, qualifier manipulators are added to all existing categories of type transformations: cv (\ref{meta.trans.cv}), reference (\ref{meta.trans.ref}), sign (\ref{meta.trans.sign}), array (\ref{meta.trans.arr}) and pointer (\ref{meta.trans.ptr}). Additionally, depending on the behavior regarding the second template parameter, two kinds of qualifier parameters are introduced: the copiers \tcode{copy_*} and the cloners \tcode{clone_*}. The difference is that the copiers directly copy the qualifiers of the first argument to the second, while cloners first discard the qualifiers of the second argument. For example \tcode{copy_cv_t<volatile int, const double>} evaluates to \tcode{const volatile double} while \tcode{clone_cv_t<volatile int, const double>} evaluates to \tcode{volatile double}, and \tcode{copy_all_pointers_t<int***, double*>} evaluates to \tcode{double****} while \tcode{clone_all_pointers_t<int***, double*>} evaluates to \tcode{double***}.
+
+The complete list of proposed \tcode{copy_*} and \tcode{clone_*} traits is:
+\begin{itemize}
+\item const-volatile modifications: \tcode{copy_const}, \tcode{clone_const}, \tcode{copy_volatile}, \tcode{clone_volatile}, \tcode{copy_cv}, \tcode{clone_cv}
+\item reference modifications: \tcode{copy_reference}, \tcode{clone_reference}
+\item sign modifications: \tcode{copy_signedness}
+\item array modifications: \tcode{copy_extent}, \tcode{clone_extent}, \tcode{copy_all_extents}, \tcode{clone_all_extents}
+\item pointer modifications: \tcode{copy_pointer}, \tcode{clone_pointer}, \tcode{copy_all_pointers}, \tcode{clone_all_pointers}
+\item other transformations: \tcode{copy_cvref}, \tcode{clone_cvref}
+\end{itemize}
+
+As a note, in the same way \tcode{remove_pointer} deals with cv-qualified pointers, \tcode{copy_pointer}, \tcode{clone_pointer}, \tcode{copy_all_pointers}, \tcode{clone_all_pointers} copy the cv-qualifiers of pointers. Also \tcode{copy_signedness} is preferred over \tcode{copy_sign} to avoid confusion with the existing mathematical function \tcode{copysign}. Finally, \tcode{clone_signedness} is not introduced, because \tcode{remove_sign} does not exist, and does not seem to be a relevant type trait to introduce, the only interesting use case being to transform a \tcode{signed char} or an \tcode{unsigned char} into a \tcode{char}. The difference between \tcode{copy_signedness} and a hypothetical \tcode{clone_signedness} would be the following: \tcode{copy_signedness_t<char, unsigned char>} would evaluate to \tcode{unsigned char} while \tcode{clone_signedness_t<char, unsigned char>} would evaluate to \tcode{char}. In both cases \tcode{copy/clone_signedness_t<unsigned int, int>} would evaluate to \tcode{unsigned int} and \tcode{copy/clone_signedness_t<signed int, unsigned int>} would evaluate to \tcode{signed int}.
+%% -------------------------------------------------------------------------- %%
+\rSec2[proposal.design.inher]{Conditional inheritance}
+
+\begin{codeblock}
+// Inheritance
+struct blank;
+template <class T> struct is_inheritable;
+template <bool b, class T> struct inherit_if;
+
+// Type alias and variable template
+template <class T> inline constexpr bool is_inheritable_v = is_inheritable<T>::value;
+template <bool b, class T> using inherit_if_t = typename inherit_if<b, T>::type;
+\end{codeblock}
+
+The standard library currently does not provide tools dedicated to the use of conditional inheritance. Conditional inheritance consists in conditionally inheriting from a class depending on a condition, usually related to the template parameters of the derived class. To facilitate it, we propose to introduce the following tools:
+\begin{itemize}
+\item \tcode{blank}: an generic empty class
+\item \tcode{is_inheritable}: a trait to detect whether one can inherit from a class
+\item \tcode{inherit_if}: a trait to inherit from a class if a condition is satisfied
+\end{itemize}
+
+The use of \tcode{inherit_if} can be illustrated by the following:
+\begin{codeblock}
+template <class T>
+struct foo: std::inherit_if_t<std::is_class_v<T> && !std::is_final_v<T>, T> {
+    /* class contents */
+};
+
+template <class T>
+struct bar: std::inherit_if_t<std::is_integral_v<T>, foo<T>> {
+    /* class contents */
+};
+\end{codeblock}
+where \tcode{foo<T>} derives from \tcode{T} if \tcode{T} is a non-final, non-union class, and \tcode{bar<T>} derives from \tcode{foo<T>} if \tcode{T} is an integral type.
+
+In practice, \tcode{inherit_if} can be defined as:
+\begin{codeblock}
+struct blank {};
+template <class b, class T> struct inherit_if {
+    using type = conditional_t<b, T, blank>;
+};
+\end{codeblock}
+
+Even though in that context, \tcode{blank} and \tcode{is_inheritable} are related to \tcode{inherit_if}, they can be seen as independent and relying on other motivations. Checking if one can derive from a type or not is a useful information by itself, and that is the reason behind \tcode{is_inheritable}. Then, as shown by the last block of code, \tcode{inherit_if}, as many other tools that can be developed in the metaprogramming world, requires an empty class. Since C++17, the standard proposes such as class: \tcode{monostate} in the \tcode{<variant>} header. As an empty class is a very useful tool to have, there are three main solutions:
+\begin{itemize}
+\item make \tcode{monostate} the universally accepted empty class provided by the standard library by putting it in a less specific header such as \tcode{<type_traits>} or \tcode{<utility>}
+\item keep \tcode{monostate} specific to \tcode{variant} and introduce a new universally accepted empty class provided by the standard library such as \tcode{blank} (the name being inspired from \href{https://www.boost.org/doc/libs/1_66_0/boost/blank.hpp}{The Boost C++ Libraries})
+\item introduce an different empty class for each specific use, and change the name of \tcode{blank} for \tcode{empty_base}
+\end{itemize} 
+%% -------------------------------------------------------------------------- %%
+\rSec2[proposal.design.call]{Callable categorization}
+
+\begin{codeblock}
+// Callable categorization
+template <class T> struct is_closure;
+template <class T> struct is_functor;
+template <class T> struct is_function_object;
+template <class T> struct is_callable;
+
+// Variable templates
+template <class T> inline constexpr bool is_closure_v = is_closure<T>::value;
+template <class T> inline constexpr bool is_functor_v = is_functor<T>::value;
+template <class T> inline constexpr bool is_function_object_v = is_function_object<T>::value;
+template <class T> inline constexpr bool is_callable_v = is_callable<T>::value;
+\end{codeblock}
+
+With \tcode{is_function} and \tcode{is_member_function_pointer}, the standard already allow to detect two types of callables. Additionally, \tcode{is_invocable} and its variations allows to check whether a callable can be called with a given set of arguments. However, the standard library does not currently provide a way to check if a type is a callable although the concept is defined in [func.def]: ``A callable type is a function object type or a pointer to member''. Function object types are themselves defined in [function.objects]: ``A function object type is an object type that can be the type of the postfix-expression in a function call''. To build custom overload sets, a far more fine-grained categorization of callable types was necessary. As these tools are of general interest and allow to detect types that are already defined in the existing wording of the standard, we propose them for standardization. Furthermore \href{http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0604r0.html}{P0604R0} was already discussing the idea of introducing an \tcode{is_callable} trait additionally to \tcode{is_invocable}.
+
+In this context, we propose to introduce the following traits:
+\begin{itemize}
+\item \tcode{is_closure}: to detect closure types as already defined in the standard in [expr.prim.lambda.closure]
+\item \tcode{is_functor}: to detect (possibly union) class types that have an overloaded \tcode{operator()}
+\item \tcode{is_function_object}: to detect function object types as already defined in the standard in [function.objects]
+\item \tcode{is_callable}: to detect callable types as already defined in the standard in [func.def]
+\end{itemize}
+
+Even though functors are currently not formally defined in the standard, functors are a common concept in programming languages. Also, just introducing \tcode{is_function_object} could be very misleading for users since function objects can be usually thought as functors although in the C++ standard function objects is a more general notion, including for example function pointers. The ambiguity has been confirmed informally on \href{https://stackoverflow.com/q/49503229}{StackOverflow}, where general users would expect a function object to be a functor, while experts would be aware of the difference. The introduction of both traits break the ambiguity.
+%% -------------------------------------------------------------------------- %%
+\rSec2[proposal.design.utils]{General helpers}
+
+\begin{codeblock}
+// Helpers
+template <size_t I> using index_constant = integral_constant<size_t, I>;
+template <class T, class...> using type_t = T;
+template <class...> inline constexpr bool false_v = false;
+template <class...> inline constexpr bool true_v = true;
+\end{codeblock}
+
+In the same way \tcode{index_sequence<I...>} is defined to be \tcode{integral_sequence<size_t, I...>}, we propose to introduce \tcode{index_constant} for completeness and because using an \tcode{integral_constant} of type \tcode{size_t} is a common pattern to specify a constant size.
+
+In C++17, the standard introduces \tcode{void_t}, a very useful tool to detect ill-formed types in SFINAE contexts. \tcode{void_t} maps an arbitrary sequence of types to \tcode{void}. We suggest the introduction of a more general version of this tool, to map an arbitrary sequence of types, to a given type. In that sense, \tcode{void_t} could be thought of as:
+\begin{codeblock}
+template <class... X> using void_t = type_t<void, X...>;
+\end{codeblock}
+\tcode{type_t} is just as useful as \tcode{void_t}, and be used in contexts where one wants to detect ill-formed types in SFINAE contexts, but also return a type based on this information.
+
+Additionally two template variables were suggested on \href{https://groups.google.com/a/isocpp.org/forum/#!topic/std-proposals/R04CWOjABIQ}{future-proposals}: \tcode{false_v} and \tcode{true_v}. Even though a simpler definition is possible, they can be thought of as:
+\begin{codeblock}
+template <class... X> inline constexpr bool false_v = type_t<false_type, X...>::value;
+template <class... X> inline constexpr bool true_v = type_t<true_type, X...>::value;
+\end{codeblock}
+An example of use is the content of a \tcode{static_assert} in a template context such as illustrated \href{https://stackoverflow.com/q/40681645}{here} and \href{https://quuxplusone.github.io/blog/2018/04/02/false-v/}{here}. A basic use case of \tcode{false_v} is, when in a template context, for example a template function, a \tcode{false} would produce a hard error. By making the \tcode{false} statement dependent on the template parameters, it is possible to delay instantiation and prevent the hard error as in the example below:
+\begin{codeblock}
+// Example provided by Arthur O'Dwyer
+template<class OuterAlloc, class... InnerAllocs>
+class scoped_allocator_adaptor {
+    public:
+    using oalloc_t = OuterAlloc;
+    using ialloc_t = scoped_allocator_adaptor<InnerAllocs...>;
+
+    private:
+    oalloc_t _outer;
+    ialloc_t _inner;
+    using _otraits = allocator_traits<OuterAlloc>;
+
+    public:
+    template<class... Args>
+    void construct(value_type* p, Args&&... args) {
+        if constexpr (!uses_allocator_v<value_type, ialloc_t>) {
+            _otraits::construct(_outer, p, std::forward<Args>(args)...);
+        } else if constexpr (is_constructible_v<value_type, alloc_arg_t, ialloc_t, Args&&...>) {
+            _otraits::construct(_outer, p, allocator_arg, _inner, std::forward<Args>(args)...);
+        } else if constexpr (is_constructible_v<value_type, Args&&..., ialloc_t&>) {
+            _otraits::construct(_outer, p, std::forward<Args>(args)..., _inner);
+        } else {
+            // static_assert(false, "value_type is not constructible from args"); // not working
+            static_assert(false_v<Args&&...>, "value_type is not constructible from args");
+        }
+    }
+};
+\end{codeblock}
+
+%% -------------------------------------------------------------------------- %%
+\rSec1[proposal.spec]{Technical specification}
+See the wording (part~\ref{wording}). 
+%% -------------------------------------------------------------------------- %%
+\rSec1[proposal.discussion]{Discussion and open questions}
+%% -------------------------------------------------------------------------- %%
+\rSec2[proposal.discussion.bikeshed]{Bikeshedding}
+
+While some names are straightforward and follow existing patterns in standard library, the following names are the most likely to be debated:
+\begin{itemize}
+\item \tcode{copy_*}
+\item \tcode{clone_*}
+\item \tcode{copy_signedness}
+\item \tcode{blank}
+\item \tcode{is_inheritable}
+\item \tcode{inherit_if}
+\item \tcode{type_t}
+\item \tcode{false_v}
+\item \tcode{true_v}
+\end{itemize}
+%% -------------------------------------------------------------------------- %%
+\rSec2[proposal.discussion.questions]{Questions}
+Finally, the following questions should be answered:
+\begin{itemize}
+\item \tcode{blank}: is \tcode{monostate} the universal empty class of the standard library, is a new one required, or is a specific \tcode{empty_base} necessary?
+\item \tcode{is_functor}: should classes with \tcode{private} or \tcode{protected} function call operators be considered functors, on only those with at least one \tcode{public} \tcode{operator()}?
+\item \tcode{is_callable}: should reference to callables and cv-qualified callables be themselves considered callables?
+\end{itemize}
+%% -------------------------------------------------------------------------- %%
+\rSec1[proposal.ackwldgmnts]{Acknowledgements}
+
+The authors would like to thank the participants to the related discussion on the \href{https://groups.google.com/a/isocpp.org/forum/#!topic/std-proposals/R04CWOjABIQ}{future-proposals} group, as well as Daniel Kr\"ugler for the mail exchange about \tcode{is_callable}, and Arthur O'Dwyer about \tcode{false_v} and \tcode{true_v}. This work has been made possible thanks to the National Science Foundation through the awards CCF-1647432 and SI2-SSE-1642411.
+%% -------------------------------------------------------------------------- %%
+\rSec1[proposal.references]{References}
+
+\href{http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/n4727.pdf}{N4727}, Working Draft, Standard for Programming Language C++, Richard Smith, \emph{ISO/IEC JTC1/SC22/WG21} (February 2018)
+
+\href{http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0847r0.html}{P0847R0}, Deducing this, Gasper Azman et al., \emph{ISO/IEC JTC1/SC22/WG21} (February 2018)
+
+\href{http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0604r0.html}{P0604R0}, Resolving GB 55, US 84, US 85, US 86, Daniel Kr\"ugler et al., \emph{ISO/IEC JTC1/SC22/WG21} (March 2017)
+
+\href{https://groups.google.com/a/isocpp.org/forum/#!topic/std-proposals/R04CWOjABIQ}{General purpose utilities for template metaprogramming and type manipulation}, ISO C++ Standard - Future Proposals, \emph{Google Groups} (March 2018)
+
+\href{https://www.boost.org/doc/libs/1_66_0/boost/blank.hpp}{Boost blank}, Eric Friedman, \emph{The Boost C++ Libraries} (2003)
+
+\href{https://stackoverflow.com/q/40681645}{Unit testing highly templated library}, Guillaume Racicot, \emph{StackOverflow} (November 2016)
+
+\href{https://stackoverflow.com/q/49503229}{Are function pointers function objects in C++?}, Vincent Reverdy, \emph{StackOverflow} (March 2018)
+
+\href{https://quuxplusone.github.io/blog/2018/04/02/false-v/}{Use-cases for \tcode{false_v}}, Arthur O'Dwyer, \emph{Blog post} (April 2018)
+%% -------------------------------------------------------------------------- %%
+% WORDING
+\rSec0[wording]{Wording}
+%% -------------------------------------------------------------------------- %%
+\rSec1[meta]{Metaprogramming and type traits}
+%% -------------------------------------------------------------------------- %%
+\rSec2[meta.rqmts]{Requirements}
+
+\pnum
+No modification.
+%% -------------------------------------------------------------------------- %%
+\rSec2[meta.type.synop]{Header \tcode{<type_traits>} synopsis}
+
+\pnum
+Add the following to the synopsis of \tcode{<type_traits>}:
+
+\indextext{\idxhdr{typetraits}}%
+\indexlibrary{\idxhdr{typetraits}}%
+\begin{codeblock}
+namespace std {
+    // \ref{meta.help}, helper classes
+    struct blank;
+    template <size_t I> using index_constant = integral_constant<size_t, I>;
+    
+    // \ref{meta.unary.cat}, primary type categories
+    template <class T> struct is_closure;
+
+    template <class T>
+    inline constexpr bool is_closure_v = is_closure<T>::value;
+    
+    // \ref{meta.unary.comp}, composite type categories
+    template <class T> struct is_functor;
+    template <class T> struct is_function_object;
+    template <class T> struct is_callable;
+
+    template <class T>
+    inline constexpr bool is_functor_v = is_functor<T>::value;
+    template <class T>
+    inline constexpr bool is_function_object_v = is_function_object<T>::value;
+    template <class T>
+    inline constexpr bool is_callable_v = is_callable<T>::value;
+    
+    // \ref{meta.unary.prop}, type properties
+    template <class T> struct is_inheritable;
+
+    template <class T>
+    inline constexpr bool is_inheritable_v = is_inheritable<T>::value;
+    
+    // \ref{meta.unary.prop.query}, type property queries
+    
+    // \ref{meta.rel}, type relations
+    
+    // \ref{meta.trans.cv}, const-volatile modifications
+    template <class From, class To> struct copy_const;
+    template <class From, class To> struct clone_const;
+    template <class From, class To> struct copy_volatile;
+    template <class From, class To> struct clone_volatile;
+    template <class From, class To> struct copy_cv;
+    template <class From, class To> struct clone_cv;
+
+    template <class From, class To>
+    using copy_const_t = typename copy_const<From, To>::type;
+    template <class From, class To>
+    using clone_const_t = typename clone_const<From, To>::type;
+    template <class From, class To>
+    using copy_volatile_t = typename copy_volatile<From, To>::type;
+    template <class From, class To>
+    using clone_volatile_t = typename clone_volatile<From, To>::type;
+    template <class From, class To>
+    using copy_cv_t = typename copy_cv<From, To>::type;
+    template <class From, class To>
+    using clone_cv_t = typename clone_cv<From, To>::type;
+    
+    // \ref{meta.trans.ref}, reference modifications
+    template <class From, class To> struct copy_reference;
+    template <class From, class To> struct clone_reference;
+
+    template <class From, class To>
+    using copy_reference_t = typename copy_reference<From, To>::type;
+    template <class From, class To>
+    using clone_reference_t = typename clone_reference<From, To>::type;
+    
+    // \ref{meta.trans.sign}, sign modifications
+    template <class From, class To> struct copy_signedness;
+
+    template <class From, class To>
+    using copy_signedness_t = typename copy_signedness<From, To>::type;
+    
+    // \ref{meta.trans.arr}, array modifications
+    template <class From, class To> struct copy_extent;
+    template <class From, class To> struct clone_extent;
+    template <class From, class To> struct copy_all_extents;
+    template <class From, class To> struct clone_all_extents;
+
+    template <class From, class To>
+    using copy_extent_t = typename copy_extent<From, To>::type;
+    template <class From, class To>
+    using clone_extent_t = typename clone_extent<From, To>::type;
+    template <class From, class To>
+    using copy_all_extents_t = typename copy_all_extents<From, To>::type;
+    template <class From, class To>
+    using clone_all_extents_t = typename clone_all_extents<From, To>::type;
+    
+    // \ref{meta.trans.ptr}, pointer modifications
+    template <class T> struct remove_all_pointers;
+    template <class From, class To> struct copy_pointer;
+    template <class From, class To> struct clone_pointer;
+    template <class From, class To> struct copy_all_pointers;
+    template <class From, class To> struct clone_all_pointers;
+
+    template <class T>
+    using remove_all_pointers_t = typename remove_all_pointers<T>::type;
+    template <class From, class To>
+    using copy_pointer_t = typename copy_pointer<From, To>::type;
+    template <class From, class To>
+    using clone_pointer_t = typename clone_pointer<From, To>::type;
+    template <class From, class To>
+    using copy_all_pointers_t = typename copy_all_pointers<From, To>::type;
+    template <class From, class To>
+    using clone_all_pointers_t = typename clone_all_pointers<From, To>::type;
+    
+    // \ref{meta.trans.other}, other transformations
+    template <class From, class To> struct copy_cvref;
+    template <class From, class To> struct clone_cvref;
+    template <bool b, class T> struct inherit_if;
+
+    template <class From, class To>
+    using copy_cvref_t = typename copy_cvref<From, To>::type;
+    template <class From, class To>
+    using clone_cvref_t = typename clone_cvref<From, To>::type;
+    template <bool b, class T>
+    using inherit_if_t = typename inherit_if<b, T>::type;
+
+    template <class T, class...> using type_t = T;
+    template <class...> inline constexpr bool false_v = false;
+    template <class...> inline constexpr bool true_v = true;
+    
+    // \ref{meta.logical}, logical operator traits
+    
+    // \ref{meta.endian}, endian
+}
+\end{codeblock}
+%% -------------------------------------------------------------------------- %%
+\rSec2[meta.help]{Helper classes}
+
+\begin{codeblock}
+namespace std {
+    struct blank {};
+}
+\end{codeblock}
+
+\indexlibrary{\idxcode{blank}}
+
+\pnum
+The class template \tcode{blank} provides an empty class to be used in a wide range of context such as being a placeholder in conditional inheritance.
+
+%% -------------------------------------------------------------------------- %%
+\rSec2[meta.unary]{Unary type traits}
+
+\pnum
+No modification.
+%% -------------------------------------------------------------------------- %%
+\rSec3[meta.unary.cat]{Primary type categories}
+
+\pnum
+Add the following to the table ``Primary type category predicates'':
+
+\begin{libreqtab3e}{Primary type category predicates}{tab:type-traits.primary}
+\\ \topline
+\lhdr{Template} &   \chdr{Condition}    &   \rhdr{Comments} \\\capsep
+\endfirsthead
+\continuedcaption\\
+\topline
+\lhdr{Template} &   \chdr{Condition}    &   \rhdr{Comments} \\ \capsep
+\endhead
+
+\indexlibrary{\idxcode{is_closure}}%
+\tcode{template<class T>\br struct is_closure;} &
+\tcode{T} is a closure type (see [expr.prim.lambda.closure]). &
+\\
+\end{libreqtab3e}
+%% -------------------------------------------------------------------------- %%
+\rSec3[meta.unary.comp]{Composite type traits}
+
+\pnum
+Add the following to the table ``Composite type category predicates'':
+
+\begin{libreqtab3b}{Composite type category predicates}{tab:type-traits.composite}
+\\ \topline
+\lhdr{Template} &   \chdr{Condition}    &   \rhdr{Comments} \\ \capsep
+\endfirsthead
+\continuedcaption\\
+\topline
+\lhdr{Template} &   \chdr{Condition}    &   \rhdr{Comments} \\ \capsep
+\endhead
+
+\indexlibrary{\idxcode{is_functor}}%
+\tcode{template<class T>\br struct is_functor;} &
+\tcode{T} is a (possibly union) class type with an overloaded \tcode{operator()}. &
+\\ \rowsep
+
+\indexlibrary{\idxcode{is_function_object}}%
+\tcode{template<class T>\br struct is_function_object;} &
+\tcode{T} is a function object (see [function.objects]).&
+This includes pointers to functions.
+\\ \rowsep
+ 
+\indexlibrary{\idxcode{is_callable}}%
+\tcode{template<class T>\br struct is_callable;} &
+\tcode{T} is a callable type (see [func.def]). &
+\\
+\end{libreqtab3b}
+%% -------------------------------------------------------------------------- %%
+\rSec3[meta.unary.prop]{Type properties}
+
+\pnum
+Add the following to the table ``Type property predicates'':
+
+\begin{libreqtab3b}{Type property predicates}{tab:type-traits.properties}
+\\ \topline
+\lhdr{Template} &   \chdr{Condition}    &   \rhdr{Preconditions}    \\ \capsep
+\endfirsthead
+\continuedcaption\\
+\topline
+\lhdr{Template} &   \chdr{Condition}    &   \rhdr{Preconditions}    \\ \capsep
+\endhead
+
+\indexlibrary{\idxcode{is_inheritable}}%
+\tcode{template<class T>\br struct is_inheritable;} &
+It is possible to create a class \tcode{U} for which \tcode{is_base_of_v<T, U>} is \tcode{true}. &
+\\
+\end{libreqtab3b}
+%% -------------------------------------------------------------------------- %%
+\rSec2[meta.unary.prop.query]{Type property queries}
+
+\pnum
+No modification.
+%% -------------------------------------------------------------------------- %%
+\rSec2[meta.rel]{Relationships between types}
+
+\pnum
+No modification.
+%% -------------------------------------------------------------------------- %%
+\rSec2[meta.trans]{Transformations between types}
+%% -------------------------------------------------------------------------- %%
+\rSec3[meta.trans.cv]{Const-volatile modifications}
+
+\pnum
+Add the following to the table ``Const-volatile modifications'':
+
+\begin{libreqtab2b}{Const-volatile modifications}{tab:type-traits.const-volatile}
+\\ \topline
+\lhdr{Template} &   \rhdr{Comments} \\ \capsep
+\endfirsthead
+\continuedcaption\\
+\topline
+\lhdr{Template} &   \rhdr{Comments} \\ \capsep
+\endhead
+
+\indexlibrary{\idxcode{copy_const}}%
+\tcode{template<class From, class To>\br struct copy_const;} &
+The member typedef \tcode{type} names the same type as \tcode{add_const_t<To>} if \tcode{is_const_v<From>}, and \tcode{To} otherwise.
+\\ \rowsep
+
+\indexlibrary{\idxcode{clone_const}}%
+\tcode{template<class From, class To>\br struct clone_const;} &
+The member typedef \tcode{type} names the same type as \tcode{copy_const_t<From, remove_const_t<To>>}.
+\\ \rowsep
+
+\indexlibrary{\idxcode{copy_volatile}}%
+\tcode{template<class From, class To>\br struct copy_volatile;} &
+The member typedef \tcode{type} names the same type as \tcode{add_const_t<To>} if \tcode{is_const_v<From>}, and \tcode{To} otherwise.
+\\ \rowsep
+
+\indexlibrary{\idxcode{clone_volatile}}%
+\tcode{template<class From, class To>\br struct clone_volatile;} &
+The member typedef \tcode{type} names the same type as \tcode{copy_volatile_t<From, remove_volatile_t<To>>}.
+\\ \rowsep
+
+\indexlibrary{\idxcode{copy_cv}}%
+\tcode{template<class From, class To>\br struct copy_cv;} &
+The member typedef \tcode{type} names the same type as \tcode{copy_const_t<From, copy_volatile_t<From, To>>}.
+\\ \rowsep
+
+\indexlibrary{\idxcode{clone_cv}}%
+\tcode{template<class From, class To>\br struct clone_cv;} &
+The member typedef \tcode{type} names the same type as \tcode{copy_cv_t<From, remove_cv_t<To>>}.
+\\
+\end{libreqtab2b}
+%% -------------------------------------------------------------------------- %%
+\rSec3[meta.trans.ref]{Reference modifications}
+
+\pnum
+Add the following to the table ``Reference modifications'':
+
+\begin{libreqtab2b}{Reference modifications}{tab:type-traits.reference}
+\\ \topline
+\lhdr{Template} &   \rhdr{Comments} \\ \capsep
+\endfirsthead
+\continuedcaption\\
+\topline
+\lhdr{Template} &   \rhdr{Comments} \\ \capsep
+\endhead
+
+\indexlibrary{\idxcode{copy_reference}}%
+\tcode{template<class From, class To>\br struct copy_reference;} &
+The member typedef \tcode{type} names the same type as \tcode{add_rvalue_reference_t<To>} if \tcode{is_rvalue_reference_v<From>}, \tcode{add_lvalue_reference_t<To>} if \tcode{is_lvalue_reference_v<From>}, and \tcode{To} otherwise.
+\\ \rowsep
+
+\indexlibrary{\idxcode{clone_reference}}%
+\tcode{template<class From, class To>\br struct clone_reference;} &
+The member typedef \tcode{type} names the same type as \tcode{copy_reference_t<From, remove_reference_t<To>>}.
+\\
+\end{libreqtab2b}
+
+%% -------------------------------------------------------------------------- %%
+\rSec3[meta.trans.sign]{Sign modifications}
+
+\pnum
+Add the following to the table ``Sign modifications'':
+
+\begin{libreqtab2b}{Sign modifications}{tab:type-traits.sign}
+\\ \topline
+\lhdr{Template} &   \rhdr{Comments} \\ \capsep
+\endfirsthead
+\continuedcaption\\
+\topline
+\lhdr{Template} &   \rhdr{Comments} \\ \capsep
+\endhead
+
+\indexlibrary{\idxcode{copy_signedness}}%
+\tcode{template<class From, class To>\br struct copy_signedness;} &
+The member typedef \tcode{type} names the same type as \tcode{make_signed_t<To>} if \tcode{is_same_v<From, make_signed_t<From>>}, \tcode{make_unsigned_t<To>} if \tcode{is_same_v<From, make_unsigned_t<From>>}, and \tcode{To} otherwise.\br
+\requires{} \tcode{From} and \tcode{To} shall be (possibly cv-qualified) integral types or enumerations but not \tcode{bool} types.
+\\
+\end{libreqtab2b}
+%% -------------------------------------------------------------------------- %%
+\rSec3[meta.trans.arr]{Array modifications}
+
+\pnum
+Add the following to the table ``Array modifications'':
+
+\begin{libreqtab2b}{Array modifications}{tab:type-traits.array}
+\\ \topline
+\lhdr{Template} &   \rhdr{Comments} \\ \capsep
+\endfirsthead
+\continuedcaption\\
+\topline
+\lhdr{Template} &   \rhdr{Comments} \\ \capsep
+\endhead
+
+\indexlibrary{\idxcode{copy_extent}}%
+\tcode{template<class From, class To>\br struct copy_extent;} &
+The member typedef \tcode{type} names the same type as \tcode{To[extent_v<From>]} if \tcode{rank_v<From> > 0 \&\& extent_v<From> > 0}, \tcode{To[]} if \tcode{rank_v<From> > 0 \&\& extent_v<From> == 0}, and \tcode{To} otherwise.\br
+\requires{} \tcode{To} shall not be an array of unknown bound along its first dimension if \tcode{From} is an array of unknown bound along its first dimension.
+\\ \rowsep
+
+\indexlibrary{\idxcode{clone_extent}}%
+\tcode{template<class From, class To>\br struct clone_extent;} &
+The member typedef \tcode{type} names the same type as \tcode{copy_extent_t<From, remove_extent_t<To>>}.\br
+\requires{} \tcode{From} and \tcode{To} shall not be arrays of unknown bounds along their first dimension at the same time.
+\\ \rowsep
+    
+\indexlibrary{\idxcode{copy_all_extents}}%
+\tcode{template<class From, class To>\br struct copy_all_extents;} &
+The member typedef \tcode{type} names the same type as \tcode{copy_extent_t<From, copy_all_extents_t<std::remove_extent_t<From>, To>>} if \tcode{rank_v<From> > 0}, and \tcode{To} otherwise.\br
+\requires{} \tcode{From} and \tcode{To} shall not be arrays of unknown bounds along their first dimension at the same time.
+\\ \rowsep
+
+\indexlibrary{\idxcode{clone_all_extents}}%
+\tcode{template<class From, class To>\br struct clone_all_extents;} &
+The member typedef \tcode{type} names the same type as \tcode{copy_all_extents_t<From, remove_all_extents_t<To>>}.
+\\
+\end{libreqtab2b}
+%% -------------------------------------------------------------------------- %%
+\rSec3[meta.trans.ptr]{Pointer modifications}
+
+\pnum
+Add the following to the table ``Pointer modifications'':
+
+\begin{libreqtab2b}{Pointer modifications}{tab:type-traits.pointer}
+\\ \topline
+\lhdr{Template} &   \rhdr{Comments} \\ \capsep
+\endfirsthead
+\continuedcaption\\
+\topline
+\lhdr{Template} &   \rhdr{Comments} \\ \capsep
+\endhead
+
+\indexlibrary{\idxcode{remove_all_pointers}}%
+\tcode{template<class T>\br struct remove_all_pointers;} &
+The member typedef \tcode{type} names the same type as \tcode{remove_all_pointers_t<remove_pointer_t<T>>} if \tcode{is_pointer_v<T>}, and \tcode{T} otherwise.
+\\ \rowsep
+
+\indexlibrary{\idxcode{copy_pointer}}%
+\tcode{template<class From, class To>\br struct copy_pointer;} &
+The member typedef \tcode{type} names the same type as \tcode{copy_cv_t<From, add_pointer_t<To>>} if \tcode{is_pointer_v<From>}, and \tcode{To} otherwise.
+\\ \rowsep
+
+\indexlibrary{\idxcode{clone_pointer}}%
+\tcode{template<class From, class To>\br struct clone_pointer;} &
+The member typedef \tcode{type} names the same type as \tcode{copy_pointer_t<From, remove_pointer_t<To>>}.
+\\ \rowsep
+
+\indexlibrary{\idxcode{copy_all_pointers}}%
+\tcode{template<class From, class To>\br struct copy_all_pointers;} &
+The member typedef \tcode{type} names the same type as \tcode{copy_pointer_t<From, copy_all_pointers_t<std::remove_pointer_t<From>, To>>} if \tcode{is_pointer_v<From>}, and \tcode{To} otherwise.
+\\ \rowsep
+
+\indexlibrary{\idxcode{clone_all_pointers}}%
+\tcode{template<class From, class To>\br struct clone_all_pointers;} &
+The member typedef \tcode{type} names the same type as \tcode{copy_all_pointers_t<From, remove_all_pointers_t<To>>}.
+\\
+\end{libreqtab2b}
+%% -------------------------------------------------------------------------- %%
+\rSec3[meta.trans.other]{Other transformations}
+
+\pnum
+Add the following to the table ``Other transformations'':
+
+\begin{libreqtab2b}{Other transformations}{tab:type-traits.other}
+\\ \topline
+\lhdr{Template}   &   \rhdr{Comments} \\ \capsep
+\endfirsthead
+\continuedcaption\\
+\topline
+\lhdr{Template}   &   \rhdr{Comments} \\ \capsep
+\endhead
+    
+\indexlibrary{\idxcode{copy_cvref}}%
+\tcode{template<class From, class To>\br struct copy_cvref;} &
+The member typedef \tcode{type} names the same type as \tcode{copy_reference_t<From, copy_reference_t<To, copy_cv_t<remove_reference_t<From>, remove_reference_t<To>>>>}.
+\\ \rowsep
+
+\indexlibrary{\idxcode{clone_cvref}}%
+\tcode{template<class From, class To>\br struct clone_cvref;} &
+The member typedef \tcode{type} names the same type as \tcode{copy_cvref_t<From, remove_cvref<To>>}.
+\\ \rowsep
+
+\indexlibrary{\idxcode{inherit_if}}%
+\tcode{template <bool, class T>\br struct inherit_if;} &
+The member typedef \tcode{type} names the same type as \tcode{conditional_t<b, T, blank>>}.
+\begin{example} For \tcode{template <class T> struct derived: inherit_if_t<is_integral_v<T>, base> \{\};}, \tcode{is_base_of_v<base, derived>} will evaluate to \tcode{true} if \tcode{T} is an integral type, and to \tcode{false} otherwise.\end{example}
+\\
+\end{libreqtab2b}
+%% -------------------------------------------------------------------------- %%
+\rSec2[meta.logical]{Logical operator traits}
+
+\pnum
+No modification.
+%% -------------------------------------------------------------------------- %%
+\rSec2[meta.endian]{Endian}
+
+\pnum
+No modification.
+%% -------------------------------------------------------------------------- %%
+\newpage
+\phantomsection
+\setcounter{chapter}{3}
+\addcontentsline{toc}{chapter}{\protect\numberline{\thechapter}Presentation}
+\includepdf[pages=-,scale=2,fitpaper,templatesize={256mm}{192mm}]{\presfile}
+%% -------------------------------------------------------------------------- %%
+% BACK MATTER
+\backmatter
+\end{document}
+% DOCUMENT END
+%% ========================================================================== %%

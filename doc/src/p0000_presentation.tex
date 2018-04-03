@@ -1,0 +1,603 @@
+%% ================== ISO WG21 C++ PROPOSAL: TYPE UTILITIES ================= %% 
+%% Name:            p0000_presentation.tex
+%% Description:     Type utilities wording draft: presentation
+%% Creator:         Vincent Reverdy
+%% Contributors:    Vincent Reverdy [2018]
+%% License:         BSD 3-Clause License
+%% ========================================================================== %%
+
+
+
+%% =============================== PARAMETERS =============================== %%
+% DOCUMENT PARAMETERS
+\newcommand{\docno}{P0000R0}
+\newcommand{\prevdocno}{P0000R0}
+\newcommand{\doctitle}{A few additional type manipulation utilities}
+\newcommand{\docauthor}{Vincent Reverdy}
+\newcommand{\doccoauthor}{Robert J. Brunner}
+\newcommand{\reldate}{\today}
+\newcommand{\firstlibchapter}{language.support}
+\newcommand{\lastlibchapter}{thread}
+%% ========================================================================== %%
+
+
+
+%% ============================== CONFIGURATION ============================= %%
+% DOCUMENT TYPE 
+\documentclass[8pt]{beamer}
+
+% THEME
+\usetheme{Frankfurt}
+\useinnertheme{rectangles}
+\setbeamertemplate{blocks}[default]
+
+% PACKAGES
+%\usepackage{packages/fancylayout}
+\usepackage{ragged2e}
+\usepackage{multicol}
+\usepackage{lmodern}
+\usepackage{xcolor}
+\usepackage{csquotes}
+\usepackage{environ}
+\usepackage{stmaryrd}
+\usepackage{sistyle}
+\usepackage[T1]{fontenc}
+\usepackage{pdfpages}
+\usepackage{comment}
+\usepackage{listings}
+\usepackage{makecell}
+\usepackage{hyperref}
+\usepackage{titling}
+\usepackage{tikz}
+\usepackage{tikzsymbols}
+\usetikzlibrary{calc,positioning,arrows.meta}
+\beamertemplatenavigationsymbolsempty
+
+% INFORMATION
+\title{\doctitle}
+\author{\docauthor}
+\date{}
+
+% LISTINGS
+\lstset{
+    language=C++,
+    basicstyle=\ttfamily,
+    aboveskip=0pt,
+    belowskip=0pt,
+    morekeywords={constexpr,noexcept},
+    keywordstyle=\color{blue},
+    commentstyle=\color[RGB]{0,128,0}
+}
+
+% NOTEBLOCK
+\newcounter{notecounter}
+\newenvironment<>{noteblock}[1]{%
+\stepcounter{notecounter}%
+\setbeamercolor{block title}{fg=white,bg=orange}%
+\setbeamercolor{itemize item}{fg=orange!75!yellow}%
+\begin{block}#2{#1}}{\end{block}}
+%% ========================================================================== %%
+
+
+
+%% ================================ DOCUMENT ================================ %%
+\begin{document}
+%% -------------------------------------------------------------------------- %%
+\section*{Introduction}
+\subsection{Introduction}
+\frame{\titlepage}
+%% -------------------------------------------------------------------------- %%
+\begin{frame}[fragile]{Summary}
+\begin{block}{What?}
+\justifying
+Additional type traits for the \lstinline{<type_traits>} header and corresponding to common metaprogramming patterns. Originally developed for a library to create custom overload sets (to be proposed separately).
+\end{block}
+
+\vspace{-0.5\baselineskip}
+
+\begin{block}{Overview}
+\justifying
+5 domains: pointers removal, qualifiers manipulation, inheritance, callables and helpers.
+\end{block}
+
+\vspace{-1.5\baselineskip}
+
+\begin{columns}[onlytextwidth, t]
+%
+\begin{column}{0.18\textwidth}
+\begin{exampleblock}{\scriptsize Pointers removal\strut}
+\scriptsize\lstinline{remove_all_pointers}
+\end{exampleblock}
+\end{column}
+%
+\begin{column}{0.18\textwidth}
+\begin{exampleblock}{\scriptsize Qualifiers copy\strut}
+\scriptsize\lstinline{copy_const}\linebreak
+\scriptsize\lstinline{copy_volatile}\linebreak
+\scriptsize\lstinline{copy_cv}\linebreak
+\scriptsize\lstinline{copy_reference}\linebreak
+\scriptsize\lstinline{copy_signedness}\linebreak
+\scriptsize\lstinline{copy_extent}\linebreak
+\scriptsize\lstinline{copy_all_extents}\linebreak
+\scriptsize\lstinline{copy_pointer}\linebreak
+\scriptsize\lstinline{copy_all_pointers}\linebreak
+\scriptsize\lstinline{copy_cvref}
+\end{exampleblock}
+\vspace{-\baselineskip}
+\begin{exampleblock}{\scriptsize Qualifiers cloning\strut}
+\scriptsize\lstinline{clone_const}\linebreak
+\scriptsize\lstinline{clone_volatile}\linebreak
+\scriptsize\lstinline{clone_cv}\linebreak
+\scriptsize\lstinline{clone_reference}\linebreak
+\scriptsize\lstinline{clone_extent}\linebreak
+\scriptsize\lstinline{clone_all_extents}\linebreak
+\scriptsize\lstinline{clone_pointer}\linebreak
+\scriptsize\lstinline{clone_all_pointers}\linebreak
+\scriptsize\lstinline{clone_cvref}
+\end{exampleblock}
+\end{column}
+%
+\begin{column}{0.18\textwidth}
+\begin{exampleblock}{\scriptsize Conditional inheritance\strut}
+\scriptsize\lstinline{blank}\linebreak
+\scriptsize\lstinline{is_inheritable}\linebreak
+\scriptsize\lstinline{inherit_if}
+\end{exampleblock}
+\end{column}
+%
+\begin{column}{0.18\textwidth}
+\begin{exampleblock}{\scriptsize Callable categorization\strut}
+\scriptsize\lstinline{is_closure}\linebreak
+\scriptsize\lstinline{is_functor}\linebreak
+\scriptsize\lstinline{is_function_object}\linebreak
+\scriptsize\lstinline{is_callable}
+\end{exampleblock}
+\end{column}
+%
+\begin{column}{0.18\textwidth}
+\begin{exampleblock}{\scriptsize Helpers\strut}
+\scriptsize\lstinline{index_constant}\linebreak
+\scriptsize\lstinline{type_t}\linebreak
+\scriptsize\lstinline{false_v}\linebreak
+\scriptsize\lstinline{true_v}
+\end{exampleblock}
+\end{column}
+%
+\end{columns}
+
+\end{frame}
+%% -------------------------------------------------------------------------- %%
+\section*{Pointers}
+\subsection{Pointers}
+
+\begin{frame}[fragile]{Pointers removal}
+
+\begin{alertblock}{Current pointer and extent transformation traits}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+template <class T> struct add_pointer;
+template <class T> struct remove_pointer;
+template <class T> struct remove_extent;
+template <class T> struct remove_all_extents;
+
+template <class T> using add_pointer_t = typename add_pointer<T>::type;
+template <class T> using remove_pointer_t = typename remove_pointer<T>::type;
+template <class T> using remove_extent_t = typename remove_extent<T>::type;
+template <class T> using remove_all_extents_t = typename remove_all_extents<T>::type;
+\end{lstlisting}
+\end{alertblock}
+\vspace{-0.5\baselineskip}
+\begin{block}{Synopsis of the proposed additions}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+template <class T> struct remove_all_pointers;
+template <class T> using remove_all_pointers_t = typename remove_all_pointers<T>::type;
+\end{lstlisting}
+\end{block}
+\vspace{-0.5\baselineskip}
+\begin{block}{Motivations}
+\vspace{-0.5\baselineskip}
+\begin{itemize}
+\item Symmetry with \lstinline{remove_extent} and \lstinline{remove_all_extents}
+\item As useful as \lstinline{remove_all_extents}
+\item Completeness with qualifier manipulation traits (see next section)
+\end{itemize}
+\vspace{-0.5\baselineskip}
+\end{block}
+\vspace{-0.5\baselineskip}
+\begin{exampleblock}{Example}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+// Arrays
+using arr0_t = int[2][3][4];
+using arr1_t = remove_extent_t<arr0_t>;       // int[3][4]
+using type_a = remove_all_extents_t<arr0_t>;  // int
+
+// Pointers
+using ptr0_t = int***;
+using ptr1_t = remove_pointer_t<ptr0_t>;      // int**
+using type_p = remove_all_pointers_t<ptr0_t>; // int
+\end{lstlisting}
+\end{exampleblock}
+\end{frame}
+%% -------------------------------------------------------------------------- %%
+\section*{Qualifiers}
+\subsection{Qualifiers}
+
+\begin{frame}[fragile]{Qualifiers manipulation: synopsis}
+\vspace{-1.3\baselineskip}
+\begin{block}{\vspace*{-3ex}}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+template <class From, class To> struct copy_const;
+template <class From, class To> struct clone_const;
+template <class From, class To> struct copy_volatile;
+template <class From, class To> struct clone_volatile;
+template <class From, class To> struct copy_cv;
+template <class From, class To> struct clone_cv;
+template <class From, class To> struct copy_reference;
+template <class From, class To> struct clone_reference;
+template <class From, class To> struct copy_signedness;
+template <class From, class To> struct copy_extent;
+template <class From, class To> struct clone_extent;
+template <class From, class To> struct copy_all_extents;
+template <class From, class To> struct clone_all_extents;
+template <class From, class To> struct copy_pointer;
+template <class From, class To> struct clone_pointer;
+template <class From, class To> struct copy_all_pointers;
+template <class From, class To> struct clone_all_pointers;
+template <class From, class To> struct copy_cvref;
+template <class From, class To> struct clone_cvref;
+
+template <class F, class T> using copy_const_t = typename copy_const<F, T>::type;
+template <class F, class T> using clone_const_t = typename clone_const<F, T>::type;
+template <class F, class T> using copy_volatile_t = typename copy_volatile<F, T>::type;
+template <class F, class T> using clone_volatile_t = typename clone_volatile<F, T>::type;
+template <class F, class T> using copy_cv_t = typename copy_cv<F, T>::type;
+template <class F, class T> using clone_cv_t = typename clone_cv<F, T>::type;
+template <class F, class T> using copy_reference_t = typename copy_reference<F, T>::type;
+template <class F, class T> using clone_reference_t = typename clone_reference<F, T>::type;
+template <class F, class T> using copy_signedness_t = typename copy_signedness<F, T>::type;
+template <class F, class T> using copy_extent_t = typename copy_extent<F, T>::type;
+template <class F, class T> using clone_extent_t = typename clone_extent<F, T>::type;
+template <class F, class T> using copy_all_extents_t = typename copy_all_extents<F, T>::type;
+template <class F, class T> using clone_all_extents_t = typename clone_all_extents<F, T>::type;
+template <class F, class T> using copy_pointer_t = typename copy_pointer<F, T>::type;
+template <class F, class T> using clone_pointer_t = typename clone_pointer<F, T>::type;
+template <class F, class T> using copy_all_pointers_t = typename copy_all_pointers<F, T>::type;
+template <class F, class T> using clone_all_pointers_t = typename clone_all_pointers<F, T>::type;
+template <class F, class T> using copy_cvref_t = typename copy_cvref<F, T>::type;
+template <class F, class T> using clone_cvref_t = typename clone_cvref<F, T>::type;
+\end{lstlisting}
+\end{block}
+\end{frame}
+
+\begin{frame}[fragile]{Qualifiers manipulation: design}
+
+\begin{block}{Functionality}
+Apply qualifiers or attributes of one type to another type.
+\end{block}
+
+\vspace{-0.5\baselineskip}
+
+\begin{exampleblock}{Example}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+// Copy cv qualifiers
+using type0 = copy_cv_t<const int, double>;                 // const double
+using type1 = copy_cv_t<volatile int, double>;              // volatile double
+using type2 = copy_cv_t<const volatile int, double>;        // const volatile double
+
+// Copy cv-ref qualifiers
+using type3 = copy_cvref_t<int&, double>;                   // double&
+using type4 = copy_cvref_t<volatile int&, double>;          // volatile double&
+using type5 = copy_cvref_t<const volatile int&&, double>;   // const volatile double&&
+
+// Copy vs clone
+using type6 = copy_cvref_t<volatile int&, const double>;    // const volatile double&
+using type7 = clone_cvref_t<volatile int&, const double>;   // volatile double&
+using type8 = copy_all_pointers_t<int**, double***>;        // double*****;
+using type9 = clone_all_pointers_t<int**, double***>;       // double**;
+\end{lstlisting}
+\end{exampleblock}
+
+\vspace{-0.5\baselineskip}
+
+\begin{block}{Design}
+\vspace{-0.5\baselineskip}
+\begin{itemize}
+\item Two types of transformations: \lstinline{copy_*} and \lstinline{clone_*}
+\item \lstinline{copy_*}: add the given qualifiers/attributes of \lstinline{From} to \lstinline{To}
+\item \lstinline{clone_*}: apply the given qualifiers/attributes of \lstinline{From} to \lstinline{To} by first removing the given qualifiers/attributes of \lstinline{To}
+\item Same list as existing transformation traits \lstinline{add_*} and \lstinline{remove_*}
+\end{itemize}
+\vspace{-0.5\baselineskip}
+\end{block}
+
+\end{frame}
+
+\begin{frame}[fragile]{Qualifiers manipulation: overview}
+\begin{block}{Overview}
+\begin{center}
+\ttfamily\tiny
+\begin{tabular}{@{}|@{\hskip1pt}c@{\hskip1pt}||@{\hskip1pt}c@{\hskip1pt}|@{\hskip1pt}c@{\hskip1pt}|@{\hskip1pt}c@{\hskip1pt}|@{\hskip1pt}c@{\hskip1pt}|@{\hskip1pt}c@{\hskip1pt}|@{\hskip1pt}c@{\hskip1pt}|@{}}
+\hline
+& \textbf{cv} & \textbf{reference} & \textbf{sign} & \textbf{array} & \textbf{pointer} & \textbf{cvref} \\
+\hline
+\hline
+\textbf{remove\_*} & \makecell{\textcolor{black}{remove\_const} \\ \textcolor{black}{remove\_volatile} \\ \textcolor{black}{remove\_cv}} & \textcolor{black}{remove\_reference} & & \makecell{\textcolor{black}{remove\_extent} \\ \textcolor{black}{remove\_all\_extents}} & \makecell{\textcolor{black}{remove\_pointer} \\ \textcolor{blue}{remove\_all\_pointers}} & \textcolor{black}{remove\_cvref}\\
+\hline
+\textbf{add\_*} & \makecell{\textcolor{black}{add\_const} \\ \textcolor{black}{add\_volatile} \\ \textcolor{black}{add\_cv}} & \makecell{\textcolor{black}{add\_lvalue\_reference} \\ \textcolor{black}{add\_rvalue\_reference}} & & & \textcolor{black}{add\_pointer} & \\
+\hline
+\textbf{make\_*} & & & \makecell{\textcolor{black}{make\_signed} \\ \textcolor{black}{make\_unsigned}} & & & \\
+\hline
+\textbf{copy\_*} & \makecell{\textcolor{blue}{copy\_const} \\ \textcolor{blue}{copy\_volatile} \\ \textcolor{blue}{copy\_cv}} & \textcolor{blue}{copy\_reference} & \textcolor{blue}{copy\_signedness} & \makecell{\textcolor{blue}{copy\_extent} \\ \textcolor{blue}{copy\_all\_extents}} & \makecell{\textcolor{blue}{copy\_pointer} \\ \textcolor{blue}{copy\_all\_pointers}} & \textcolor{blue}{copy\_cvref}\\
+\hline
+\textbf{clone\_*} & \makecell{\textcolor{blue}{clone\_const} \\ \textcolor{blue}{clone\_volatile} \\ \textcolor{blue}{clone\_cv}} & \textcolor{blue}{clone\_reference} & & \makecell{\textcolor{blue}{clone\_extent} \\ \textcolor{blue}{clone\_all\_extents}} & \makecell{\textcolor{blue}{clone\_pointer} \\ \textcolor{blue}{clone\_all\_pointers}} & \textcolor{blue}{clone\_cvref}\\
+\hline
+\end{tabular}
+\end{center}
+\end{block}
+\end{frame}
+
+\begin{frame}[fragile]{Qualifiers manipulation: examples}
+\vspace{-\baselineskip}
+\begin{columns}[onlytextwidth, t]
+\begin{column}{0.48\textwidth}
+\begin{exampleblock}{Use case: manipulation of universal refs\strut}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+template <class T, class U>
+void f(T&& x, U&& y) {
+    using type = T&&;
+    using other = clone_cvref_t<T&&, U&&>;
+    /* function contents */
+}
+\end{lstlisting}
+\end{exampleblock}
+\vspace{-0.5\baselineskip}
+\begin{exampleblock}{Use case: in class templates\strut}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+template <class T>
+class foo {
+    T a;
+    copy_cvref_t<T, int> n;
+    copy_cvref_t<T, double> x;
+    /* class contents */
+};
+\end{lstlisting}
+\end{exampleblock}
+\end{column}
+
+\begin{column}{0.48\textwidth}
+\begin{exampleblock}{Use case: storing the qualifiers of a type\strut}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+struct placeholder {};
+
+template <class T>
+struct qualifiers {
+    using type = copy_cvref_t<T, placeholder>;
+};
+
+template <class T>
+using qualifiers_t
+    = typename qualifiers<T>::type;
+\end{lstlisting}
+\end{exampleblock}
+\vspace{-0.5\baselineskip}
+\begin{exampleblock}{Use case: C array conversion\strut}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+int array1[5][4][3][2];
+using array_type = decltype(array1);
+copy_all_extents_t<array_type, double> array2;
+\end{lstlisting}
+\end{exampleblock}
+\end{column}
+\end{columns}
+
+\begin{exampleblock}{Use case: \href{http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0847r0.html}{P0847R0}: Deducing this\strut}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+template <class From, class To> using like_t = clone_cvref_t<From, To>;
+
+struct B {
+    template < typename Self>
+    auto&& f3(Self&& this self) {
+        return std::forward<Self>(*this).i;           // ok if Self and *this are the same type
+                                                      // compile other if Self is a derived type
+        return std::forward<like_t<Self, B>>(*this).i;// always ok
+        return std::forward_like<Self>(*this).i;      // always ok
+    }
+};
+\end{lstlisting}
+\end{exampleblock}
+\end{frame}
+
+\begin{frame}[fragile]{Qualifiers manipulation: about signedness}
+\vspace{-0.5\baselineskip}
+\begin{alertblock}{Current sign manipulators}
+\vspace{-0.5\baselineskip}
+\begin{itemize}
+\item \lstinline{make_signed}
+\item \lstinline{make_unsigned}
+\item \lstinline{is_same_v<char, signed char>} and \lstinline{is_same_v<char, unsigned char>} are both \lstinline{false}: therefore, contrarily to other integral types once \lstinline{make_signed} or \lstinline{make_unsigned} has been applied to \lstinline{char} it is impossible to recover it easily (a \lstinline{remove_sign} trait would be necessary)
+\end{itemize}
+\vspace{-0.5\baselineskip}
+\end{alertblock}
+\vspace{-0.5\baselineskip}
+\begin{exampleblock}{Proposed behavior}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+using type0 = copy_signedness_t<unsigned int, char>;            // unsigned char
+using type1 = copy_signedness_t<signed int, char>;              // signed char
+using type2 = copy_signedness_t<char, unsigned int>;            // unsigned int
+using type3 = copy_signedness_t<unsigned char, unsigned int>;   // unsigned int
+using type4 = copy_signedness_t<signed char, unsigned int>;     // signed int
+using type5 = copy_signedness_t<char, unsigned char>;           // unsigned char
+
+// using type6 = clone_signedness_t<char, unsigned char>;       // char (hypothetical)
+
+using type7 = copy_signedness_t<signed char, unsigned int>;
+// is equivalent to "make_signed_t<unsigned int>" since "signed unsigned int" would not compile
+\end{lstlisting}
+\end{exampleblock}
+\vspace{-0.5\baselineskip}
+\end{frame}
+
+\begin{frame}[fragile]{Qualifiers manipulation: discussion and open questions}
+\begin{noteblock}{Bikeshedding}
+\vspace{-0.5\baselineskip}
+\begin{itemize}
+\item Alternative names for \lstinline{copy_*}?
+\item Alternative names for \lstinline{clone_*}?
+\item Alternative names for \lstinline{copy_signedness}?
+\end{itemize}
+\vspace{-0.5\baselineskip}
+\end{noteblock}
+\vspace{-0.5\baselineskip}
+\begin{noteblock}{Remarks on \texttt{copy\_reference}}
+\lstinline{copy_reference_t<T&, U&>}, \lstinline{copy_reference_t<T&&, U&>}, \lstinline{copy_reference_t<T&, U&&>} and \lstinline{copy_reference_t<T&&, U&&>} use reference collapsing rules to compute the resulting type. As \lstinline{clone_reference} first removes the ref-qualifier of the second type, there is no need for reference collapsing in this case.
+\end{noteblock}
+\vspace{-0.5\baselineskip}
+\begin{noteblock}{Remarks on \texttt{copy\_pointer}}
+\lstinline{copy/clone_pointer} and \lstinline{copy/clone_all_pointer} copy cv-qualification of pointers:
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+using type = int* const* volatile** const volatile*;
+using other = copy_all_pointers_t<type, double>; // double* const* volatile** const volatile*
+\end{lstlisting}
+\end{noteblock}
+\vspace{-0.5\baselineskip}
+\begin{noteblock}{Remarks on \texttt{copy\_signedness}}
+\vspace{-0.5\baselineskip}
+\begin{itemize}
+\item \lstinline{clone_signedness} is not introduced because \lstinline{remove_sign} does not exist
+\item The name \lstinline{copy_signedness} is chosen because \lstinline{copysign} already exists
+\item \lstinline{copy_signedness} does not add a sign keyword (contrarily to the others \lstinline{copy_*}) but uses \lstinline{make_signed} and \lstinline{make_unsigned} instead
+\end{itemize}
+\vspace{-0.5\baselineskip}
+\end{noteblock}
+\end{frame}
+%% -------------------------------------------------------------------------- %%
+\section*{Inheritance}
+\subsection{Inheritance}
+
+\begin{frame}[fragile]{Inheritance: summary}
+\vspace{-1.3\baselineskip}
+\begin{block}{Synopsis of the proposed additions}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+struct blank;
+template <class T> struct is_inheritable;
+template <bool b, class T> struct inherit_if;
+
+template <class T> inline constexpr bool is_inheritable_v = is_inheritable<T>::value;
+template <bool b, class T> using inherit_if_t = typename inherit_if<b, T>::type;
+\end{lstlisting}
+\end{block}
+\vspace{-0.5\baselineskip}
+\begin{block}{\texttt{blank}: a general purpose empty class}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+struct blank {};
+\end{lstlisting}
+\end{block}
+\vspace{-0.5\baselineskip}
+\begin{block}{\texttt{is\_inheritable}: to check if it is possible to inherit from a class}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+template <class T> struct is_inheritable: bool_constant<is_class_v<T> && !is_final_v<T>> {};
+\end{lstlisting}
+\end{block}
+\vspace{-0.5\baselineskip}
+\begin{block}{\texttt{inherit\_if}: to enable the conditional inheritance pattern}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+template <bool b, class T> struct inherit_if {using type = conditional_t<b, T, blank>;};
+\end{lstlisting}
+\end{block}
+\vspace{-0.5\baselineskip}
+\begin{exampleblock}{\texttt{inherit\_if}: use case}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+// Inherit if possible
+template <class T>
+struct foo: inherit_if_t<is_inheritable_v<T>, T> {
+    /* class contents */
+};
+
+// Inheritance based on the properties of T
+template <class T>
+struct bar: inherit_if_t<is_integral_v<T>, foo<T>> {
+    /* class contents */
+};
+\end{lstlisting}
+\end{exampleblock}
+
+\end{frame}
+
+\begin{frame}[fragile]{Inheritance: discussion and open questions}
+\begin{noteblock}{Bikeshedding}
+\vspace{-0.5\baselineskip}
+\begin{itemize}
+\item Alternative names for \lstinline{blank}?
+\item Alternative names for \lstinline{is_inheritable}?
+\item Alternative names for \lstinline{inherit_if}?
+\end{itemize}
+\vspace{-0.5\baselineskip}
+\end{noteblock}
+
+\begin{noteblock}{Remarks on \texttt{blank}: need for a standardized empty class}
+3 mains options:
+\begin{itemize}
+\item \lstinline{blank}: introduce a new empty class to become the standardized universal empty class for metaprogramming (the name being inspired from \href{https://www.boost.org/doc/libs/1_66_0/boost/blank.hpp}{The Boost C++ Libraries})
+\item \lstinline{monostate}: make \lstinline{monostate} the standardized universal empty class (in that case it should be put in \lstinline{<utility>} or \lstinline{<type_traits>} instead of \lstinline{<variant>})
+\item \lstinline{empty_base}: introduce a specialized empty class in the context of conditional inheritance so that \lstinline{inherit_if_t} corresponds to \lstinline{conditional_t<b, T, empty_base>}
+\end{itemize}
+\vspace{-0.5\baselineskip}
+\end{noteblock}
+
+\end{frame}
+%% -------------------------------------------------------------------------- %%
+\section*{Callables}
+\subsection{Callables}
+
+\begin{frame}[fragile]{Callables categorization}
+
+\begin{alertblock}{Current traits related to callables}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+template <class T> struct is_function;
+template <class T> struct is_member_function_pointer;
+template <class T> struct is_member_object_pointer;
+
+template<class Fn, class... ArgTypes> struct is_invocable;
+template<class R, class Fn, class... ArgTypes> struct is_invocable_r;
+template<class Fn, class... ArgTypes> struct is_nothrow_invocable;
+template<class R, class Fn, class... ArgTypes> struct is_nothrow_invocable_r;
+
+template<class Fn, class... ArgTypes> struct invoke_result;
+\end{lstlisting}
+\end{alertblock}
+\vspace{-0.5\baselineskip}
+\begin{block}{Synopsis of the proposed additions}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+template <class T> struct is_closure;
+template <class T> struct is_functor;
+template <class T> struct is_function_object;
+template <class T> struct is_callable;
+
+template <class T> inline constexpr bool is_closure_v = is_closure<T>::value;
+template <class T> inline constexpr bool is_functor_v = is_functor<T>::value;
+template <class T> inline constexpr bool is_function_object_v = is_function_object<T>::value;
+template <class T> inline constexpr bool is_callable_v = is_callable<T>::value;
+\end{lstlisting}
+\end{block}
+
+\end{frame}
+%% -------------------------------------------------------------------------- %%
+\section*{Helpers}
+\subsection{Helpers}
+
+\begin{frame}[fragile]
+\end{frame}
+%% -------------------------------------------------------------------------- %%
+\section*{Questions}
+\subsection{Questions}
+
+\begin{frame}[fragile]
+\end{frame}
+%% -------------------------------------------------------------------------- %%
+\section*{Conclusion}
+\subsection{Conclusion}
+
+\begin{frame}[fragile]
+\end{frame}
+%% -------------------------------------------------------------------------- %%
+\end{document}
+%% ========================================================================== %%
