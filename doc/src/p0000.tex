@@ -368,7 +368,7 @@ template <class...> inline constexpr bool false_v = false;
 template <class...> inline constexpr bool true_v = true;
 \end{codeblock}
 
-In the same way \tcode{index_sequence<I...>} is defined to be \tcode{integral_sequence<size_t, I...>}, we propose to introduce \tcode{index_constant} for completeness and because using an \tcode{integral_constant} of type \tcode{size_t} is a common pattern to specify a constant size.
+In the same way \tcode{index_sequence<I...>} is defined to be \tcode{integer_sequence<size_t, I...>}, we propose to introduce \tcode{index_constant} for completeness and because using an \tcode{integral_constant} of type \tcode{size_t} is a common pattern to specify a constant size.
 
 In C++17, the standard introduces \tcode{void_t}, a very useful tool to detect ill-formed types in SFINAE contexts. \tcode{void_t} maps an arbitrary sequence of types to \tcode{void}. We suggest the introduction of a more general version of this tool, to map an arbitrary sequence of types, to a given type. In that sense, \tcode{void_t} could be thought of as:
 \begin{codeblock}
