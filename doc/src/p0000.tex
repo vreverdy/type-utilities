@@ -734,7 +734,7 @@ The member typedef \tcode{type} names the same type as \tcode{copy_const_t<From,
 
 \indexlibrary{\idxcode{copy_volatile}}%
 \tcode{template<class From, class To>\br struct copy_volatile;} &
-The member typedef \tcode{type} names the same type as \tcode{add_const_t<To>} if \tcode{is_const_v<From>}, and \tcode{To} otherwise.
+The member typedef \tcode{type} names the same type as \tcode{add_volatile_t<To>} if \tcode{is_volatile_v<From>}, and \tcode{To} otherwise.
 \\ \rowsep
 
 \indexlibrary{\idxcode{clone_volatile}}%
