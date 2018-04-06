@@ -394,11 +394,12 @@ copy_all_extents_t<array_type, double> array2;
 
 \begin{exampleblock}{Use case: \href{http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0847r0.html}{P0847R0}: Deducing this\strut}
 \begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+// Example provided in P0847R0
 template <class From, class To> using like_t = clone_cvref_t<From, To>;
 
 struct B {
-    template < typename Self>
-    auto&& f3(Self&& this self) {
+    template <typename Self>
+    auto&& f(Self&& this self) {
         return forward<Self>(*this).i;              // ok if Self and *this are the same type
                                                     // compile other if Self is a derived type
         return forward<like_t<Self, B>>(*this).i;   // always ok
@@ -571,7 +572,7 @@ template <class Fn, class... ArgTypes> struct invoke_result;
 template <class F, class... A> invoke_result_t<F, A...> invoke(F&& f, A&&... a) noexcept(/*..*/);
 \end{lstlisting}
 \end{alertblock}
-\vspace{-0.5\baselineskip}
+
 \begin{block}{Synopsis of the proposed additions}
 \begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
 template <class T> struct is_closure;
@@ -585,18 +586,44 @@ template <class T> inline constexpr bool is_function_object_v = is_function_obje
 template <class T> inline constexpr bool is_callable_v = is_callable<T>::value;
 \end{lstlisting}
 \end{block}
-\vspace{-0.5\baselineskip}
-\begin{block}{Motivations}
+\end{frame}
+
+\begin{frame}[fragile]{Callables categorization: motivations}
+\begin{block}{Main motivations}
 \vspace{-0.5\baselineskip}
 \begin{itemize}
 \item Make the custom overload set proposal possible (to be proposed separately)
 \item Detect types that are already defined in the standard but do not have traits yet
 \item Complete existing traits such as \lstinline{is_function} and \lstinline{is_member_function_pointer}
-\item Have a trait associated with the concept satisfied by the first argument of \lstinline{invoke}
+\item Have a trait associated with the concept satisfied by the first argument of \lstinline{invoke} (suggested by \href{http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0604r0.html}{P0604R0: Resolving GB 55, US 84, US 85, US 86} but left for later)
 \item Distinguish between the different categories of callable types
 \end{itemize}
-\vspace{-0.5\baselineskip}
 \end{block}
+\vspace{-0.5\baselineskip}
+\begin{exampleblock}{Examples of use cases}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+// Definition and use of the callable concept
+template <class T>
+concept Callable = is_callable_v<T>::value;
+template <Callable F, class... Args>
+invoke_result_t<F, Args...> invoke(F&& f, Args&&... args) noexcept(/*...*/);
+
+// Inheriting from a functor
+template <class F, class = void> class functor;
+template <class F>
+class functor<F, enable_if_t<is_functor_v<F> && is_inheritable_v<F>>>
+: F {public: using F::operator(); /* Only working for an inheritable functor */};
+
+// Check if a template class will have a unique key
+template <class T, class Key>
+struct wrapper {
+    using key_t = Key;
+    template <class T> constexpr wrapper(const T& value, const Key& key) {}
+};
+wrapper(4, []{});
+constexpr bool b = is_closure_v<typename decltype(wrapper)::key_t>;
+\end{lstlisting}
+\end{exampleblock}
 
 \end{frame}
 

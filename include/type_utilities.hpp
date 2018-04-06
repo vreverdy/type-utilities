@@ -23,7 +23,55 @@ namespace type_utilities {
 
 
 
-/* **************************** POINTERS REMOVAL **************************** */
+/* ************************* IMPLEMENTATION DETAILS ************************* */
+// A placeholder for an argument convertible to anything
+struct _argument
+{
+    template <class T>
+    constexpr operator T&() const& noexcept;
+    template <class T>
+    constexpr operator T&&() const&& noexcept;
+};
+
+// Computes the minimum arity of a functor
+template <class F, class Args = std::tuple<>, std::size_t N = 128, class = void>
+struct _min_arity
+{
+};
+
+// Computes the minimum arity of a functor: recursive specialization
+template <class F, template <class...> class T, class... Args, std::size_t N>
+struct _min_arity<F, T<Args...>, N, std::enable_if_t<sizeof...(Args) <= N>>
+: std::conditional_t<
+    std::is_invocable_v<F, Args...>,
+    std::integral_constant<std::size_t, sizeof...(Args)>,
+    _min_arity<F, std::tuple<Args..., _argument>, N>
+>
+{
+};
+
+// Checks if a class has a function call operator
+template <class F, class = void, class = void>
+struct _has_function_call_operator
+: std::false_type
+{
+};
+
+// Checks if a class has a function call operator: minimum arity is defined
+template <class F>
+struct _has_function_call_operator<
+    F,
+    std::enable_if_t<std::is_class_v<F> || std::is_union_v<F>>,
+    std::void_t<decltype(_min_arity<F>::value)>
+>
+: std::true_type
+{
+};
+/* ************************************************************************** */
+
+
+
+/* *************************** QUALIFIERS REMOVAL *************************** */
 // Removes all pointers from a type
 template <class T>
 struct remove_all_pointers
@@ -35,9 +83,18 @@ struct remove_all_pointers
     >::type;
 };
 
-// Alias template
+// Removes cv and reference qualifiers
+template <class T >
+struct remove_cvref
+{
+    using type = std::remove_cv_t<std::remove_reference_t<T>>;
+};
+
+// Alias templates
 template <class T>
 using remove_all_pointers_t = typename remove_all_pointers<T>::type;
+template <class T>
+using remove_cvref_t = typename remove_cvref<T>::type;
 /* ************************************************************************** */
 
 
@@ -121,18 +178,83 @@ struct clone_reference
     >::type;
 };
 
-// Copies the most external pointer and its cv qualification
+// Copies the signedness of an integer
+template <class From, class To>
+struct copy_signedness
+{
+    using type = std::conditional_t<
+        std::is_same_v<From, std::make_signed_t<From>>,
+        std::make_signed_t<To>,
+        std::conditional_t<
+            std::is_same_v<From, std::make_unsigned_t<From>>,
+            std::make_unsigned_t<To>,
+            To
+        >
+    >;
+};
+
+// Copies the enclosing array extent
+template <class From, class To>
+struct copy_extent
+{
+    using type = std::conditional_t<
+        std::rank_v<From> != 0,
+        std::conditional_t<
+            std::extent_v<From> != 0,
+            To[(std::extent_v<From> == 0) + std::extent_v<From>],
+            std::conditional_t<
+                std::extent_v<From> != 0,
+                std::remove_all_extents_t<To>,
+                To
+            >[]
+        >,
+        To
+    >;
+};
+
+// Clones the enclosing array extent
+template <class From, class To>
+struct clone_extent
+{
+    using type = typename copy_extent<From, std::remove_extent_t<To>>::type;
+};
+
+// Copies all array extents
+template <class From, class To>
+struct copy_all_extents
+{
+    using type = typename copy_extent<
+        From,
+        typename std::conditional_t<
+            std::rank_v<From> != 0,
+            copy_all_extents<std::remove_extent_t<From>, To>,
+            copy_extent<From, To>
+        >::type
+    >::type;
+};
+
+// Clones all array extents
+template <class From, class To>
+struct clone_all_extents
+{
+    using type = typename copy_all_extents<
+        From,
+        std::remove_all_extents_t<To>
+    >::type;
+};
+
+// Copies the enclosing pointer and its cv qualification
 template <class From, class To>
 struct copy_pointer
 {
     using type = std::conditional_t<
         std::is_pointer_v<From>,
-        typename copy_cv<From, std::add_pointer_t<To>>,
+        typename copy_cv<From, std::add_pointer_t<To>>::type,
         To
     >;
 };
 
-// Clones the most external pointer and its cv qualification
+// Clones the enclosing pointer and its cv qualification
 template <class From, class To>
 struct clone_pointer
 {
@@ -159,7 +281,7 @@ struct clone_all_pointers
 {
     using type = typename copy_all_pointers<
         From,
-        std::remove_all_pointers_t<To>
+        typename remove_all_pointers<To>::type
     >::type;
 };
 
@@ -185,7 +307,7 @@ struct clone_cvref
 {
     using type = typename copy_cvref<
         From,
-        typename std::remove_cvref<To>::type
+        typename remove_cvref<To>::type
     >::type;
 };
 
@@ -265,22 +387,26 @@ using inherit_if_t = typename inherit_if<Condition, T>::type;
 // Closure type detection according to [expr.prim.lambda.closure]
 template <class T>
 struct is_closure
+: std::bool_constant<_has_function_call_operator<T>::value>
 {
-    static_assert("Not implemented yet");
+    /* Note: this a partial implementation and requires compiler intrinsics */
 };
 
 // Functor detection for class types with an overloaded function call operator
 template <class T>
 struct is_functor
+: std::bool_constant<_has_function_call_operator<T>::value>
 {
-    static_assert("Not implemented yet");
+    /* Note: this a partial implementation and may fail in edge use cases */
 };
 
 // Function object type detection according to [function.objects]
 template <class T>
 struct is_function_object
+: std::bool_constant<is_functor<T>::value || (
+    std::is_pointer_v<T> && std::is_function_v<std::remove_pointer_t<T>>
+)>
 {
-    static_assert("Not implemented yet");
 };
 
 // Callable type detection according to [func.def]
@@ -324,6 +450,6 @@ inline constexpr bool true_v = true;
 
 
 // ========================================================================== //
-} // namespace overload
+} // namespace type_utilities
 #endif // _TYPE_UTILITIES_HPP_INCLUDED
 // ========================================================================== //
