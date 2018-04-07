@@ -19,6 +19,22 @@
 // Third-party libraries
 // Miscellaneous
 namespace type_utilities {
+#if defined(__INTEL_COMPILER)
+#define _FUNCTION __PRETTY_FUNCTION__
+#define _LAMBDA "lambda ["
+#elif defined(__clang__)
+#define _FUNCTION __PRETTY_FUNCTION__
+#define _LAMBDA "(lambda at"
+#elif defined(__GNUC__) || defined(__GNUG__)
+#define _FUNCTION __PRETTY_FUNCTION__
+#define _LAMBDA "::<lambda"
+#elif defined(_MSC_VER)
+#define _FUNCTION __FUNCSIG__
+#define _LAMBDA "::<lambda"
+#else
+#define _FUNCTION " "
+#define _LAMBDA " "
+#endif
 // ========================================================================== //
 
 
@@ -67,6 +83,33 @@ struct _has_function_call_operator<
 : std::true_type
 {
 };
+
+// Checks if a string contains a substring
+constexpr bool _contains(const char* string, const char* substring)
+{
+    constexpr char end = '\0';
+    const char* lhs = nullptr;
+    const char* rhs = nullptr;
+    bool found = *string == end && *substring == end;
+    for (; !found && *string != end; ++string) {
+        lhs = string;
+        rhs = substring;
+        for (found = true; found && *lhs != end && *rhs != end; ++lhs, ++rhs) {
+            found = *lhs == *rhs;
+        }
+        found = found && *rhs == end;
+    }
+    return found;
+}
+
+// Checks if a type is a lambda
+template <class T, class = std::remove_cv_t<T>>
+constexpr bool _is_lambda()
+{
+    constexpr bool _is_inheritable = std::is_class_v<T> && !std::is_final_v<T>;
+    constexpr bool _is_functor = _has_function_call_operator<T>::value;
+    return _is_inheritable && _is_functor && _contains(_FUNCTION, _LAMBDA);
+}
 /* ************************************************************************** */
 
 
@@ -201,11 +244,15 @@ struct copy_extent
         std::rank_v<From> != 0,
         std::conditional_t<
             std::extent_v<From> != 0,
-            To[(std::extent_v<From> == 0) + std::extent_v<From>],
             std::conditional_t<
                 std::extent_v<From> != 0,
-                std::remove_all_extents_t<To>,
-                To
+                To,
+                std::remove_all_extents_t<To>
+            >[(std::extent_v<From> == 0) + std::extent_v<From>],
+            std::conditional_t<
+                std::rank_v<From> != 0 && std::extent_v<From> == 0,
+                To,
+                std::remove_all_extents_t<To>
             >[]
         >,
         To
@@ -387,9 +434,9 @@ using inherit_if_t = typename inherit_if<Condition, T>::type;
 // Closure type detection according to [expr.prim.lambda.closure]
 template <class T>
 struct is_closure
-: std::bool_constant<_has_function_call_operator<T>::value>
+: std::bool_constant<_is_lambda<T>()>
 {
-    /* Note: this a partial implementation and requires compiler intrinsics */
+    /* Note: this is a partial implementation and may fail in edge use cases */
 };
 
 // Functor detection for class types with an overloaded function call operator
@@ -397,7 +444,7 @@ template <class T>
 struct is_functor
 : std::bool_constant<_has_function_call_operator<T>::value>
 {
-    /* Note: this a partial implementation and may fail in edge use cases */
+    /* Note: this is a partial implementation and may fail in edge use cases */
 };
 
 // Function object type detection according to [function.objects]
@@ -413,7 +460,9 @@ struct is_function_object
 template <class T>
 struct is_callable
 : std::bool_constant<
-    is_function_object<T>::value || std::is_member_pointer_v<T>
+    is_function_object<T>::value
+    || std::is_function_v<T>
+    || std::is_member_pointer_v<T>
 >
 {    
 };
