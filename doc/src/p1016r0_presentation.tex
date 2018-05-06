@@ -143,8 +143,8 @@ Implementation available at \href{https://github.com/vreverdy/type-utilities}{\t
 \begin{column}{0.18\textwidth}
 \begin{exampleblock}{\scriptsize Inheritance\strut}
 \scriptsize\lstinline{empty_base}\linebreak
-\scriptsize\lstinline{is_inheritable}\linebreak
 \scriptsize\lstinline{is_instantiable}\linebreak
+\scriptsize\lstinline{is_inheritable}\linebreak
 \scriptsize\lstinline{inherit_if}
 \end{exampleblock}
 \end{column}
@@ -487,12 +487,12 @@ using other = copy_all_pointers_t<type, double>; // double* const* volatile** co
 \begin{block}{Synopsis of the proposed additions}
 \begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
 template <class... T> struct empty_base;
-template <class T> struct is_inheritable;
 template <class T> struct is_instantiable;
+template <class T> struct is_inheritable;
 template <bool b, class T> struct inherit_if;
 
-template <class T> inline constexpr bool is_inheritable_v = is_inheritable<T>::value;
 template <class T> inline constexpr bool is_instantiable_v = is_instantiable<T>::value;
+template <class T> inline constexpr bool is_inheritable_v = is_inheritable<T>::value;
 template <bool b, class T> using inherit_if_t = typename inherit_if<b, T>::type;
 \end{lstlisting}
 \end{block}
@@ -503,15 +503,15 @@ template <class... T> struct empty_base {};
 \end{lstlisting}
 \end{block}
 \vspace{-0.5\baselineskip}
-\begin{block}{\texttt{is\_inheritable}: to check if it is possible to inherit from a class}
-\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
-template <class T> struct is_inheritable: bool_constant<is_class_v<T> && !is_final_v<T>> {};
-\end{lstlisting}
-\end{block}
-\vspace{-0.5\baselineskip}
 \begin{block}{\texttt{is\_instantiable}: to check if it is possible to instantiate an object of type \lstinline{T}}
 \begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
 template <class T> struct is_instantiable: bool_constant</* TBD */> {};
+\end{lstlisting}
+\end{block}
+\vspace{-0.5\baselineskip}
+\begin{block}{\texttt{is\_inheritable}: to check if it is possible to inherit from a class}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+template <class T> struct is_inheritable: bool_constant<is_class_v<T> && !is_final_v<T>> {};
 \end{lstlisting}
 \end{block}
 \vspace{-0.5\baselineskip}
@@ -538,8 +538,8 @@ template <class T> struct bar: inherit_if_t<is_integral_v<T>, foo<T>> {/* class 
 \vspace{-0.5\baselineskip}
 \begin{itemize}
 \item Alternative names for \lstinline{empty_base}?
-\item Alternative names for \lstinline{is_inheritable}?
 \item Alternative names for \lstinline{is_instantiable}?
+\item Alternative names for \lstinline{is_inheritable}?
 \item Alternative names for \lstinline{inherit_if}?
 \end{itemize}
 \vspace{-0.5\baselineskip}
@@ -858,8 +858,8 @@ int main() {
 \item Alternative names for \lstinline{clone_*}?
 \item Alternative names for \lstinline{copy_signedness}?
 \item Alternative names for \lstinline{empty_base}?
-\item Alternative names for \lstinline{is_inheritable}?
 \item Alternative names for \lstinline{is_instantiable}?
+\item Alternative names for \lstinline{is_inheritable}?
 \item Alternative names for \lstinline{inherit_if}?
 \item Alternative names for \lstinline{type_t}?
 \item Alternative names for \lstinline{false_v} and \lstinline{true_v}?
@@ -903,9 +903,9 @@ copy\_signedness & & & & &\\
 \hline
 empty\_base & & & & &\\
 \hline
-is\_inheritable & & & & &\\
-\hline
 is\_instantiable & & & & &\\
+\hline
+is\_inheritable & & & & &\\
 \hline
 inherit\_if & & & & &\\
 \hline
@@ -966,8 +966,8 @@ false\_v/true\_v & & & & &\\
 \begin{column}{0.18\textwidth}
 \begin{noteblock}{\scriptsize Inheritance\strut}
 \scriptsize\lstinline{empty_base}\linebreak
-\scriptsize\lstinline{is_inheritable}\linebreak
 \scriptsize\lstinline{is_instantiable}\linebreak
+\scriptsize\lstinline{is_inheritable}\linebreak
 \scriptsize\lstinline{inherit_if}
 \end{noteblock}
 \end{column}

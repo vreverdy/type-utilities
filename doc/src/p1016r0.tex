@@ -290,21 +290,21 @@ As a note, in the same way \tcode{remove_pointer} deals with cv-qualified pointe
 \begin{codeblock}
 // Inheritance
 template <class... T> struct empty_base;
-template <class T> struct is_inheritable;
 template <class T> struct is_instantiable;
+template <class T> struct is_inheritable;
 template <bool b, class T> struct inherit_if;
 
 // Type alias and variable templates
-template <class T> inline constexpr bool is_inheritable_v = is_inheritable<T>::value;
 template <class T> inline constexpr bool is_instantiable_v = is_instantiable<T>::value;
+template <class T> inline constexpr bool is_inheritable_v = is_inheritable<T>::value;
 template <bool b, class T> using inherit_if_t = typename inherit_if<b, T>::type;
 \end{codeblock}
 
 The standard library currently does not provide tools dedicated to the use of conditional inheritance. Conditional inheritance consists in conditionally inheriting from a class depending on a condition, usually related to the template parameters of the derived class. To facilitate it, we propose to introduce the following tools:
 \begin{itemize}
 \item \tcode{empty_base}: an generic templated empty class
-\item \tcode{is_inheritable}: a trait to detect whether one can inherit from a class
 \item \tcode{is_instantiable}: a trait to detect whether an object from the type can be instantiated
+\item \tcode{is_inheritable}: a trait to detect whether one can inherit from a class
 \item \tcode{inherit_if}: a trait to inherit from a class if a condition is satisfied
 \end{itemize}
 
@@ -330,7 +330,7 @@ template <class b, class T> struct inherit_if {
 };
 \end{codeblock}
 
-Even though in that context, \tcode{empty_base}, \tcode{is_inheritable}, and \tcode{is_instantiable} are related to \tcode{inherit_if}, they can be seen as independent and relying on other motivations. Checking if one can derive from a type or not is a useful information by itself, and that is the reason behind \tcode{is_inheritable}. Then, as shown by the last block of code, \tcode{inherit_if}, as many other tools that can be developed in the metaprogramming world, requires an empty class. Since C++17, the standard proposes such as class: \tcode{monostate} in the \tcode{<variant>} header. As an empty class is a very useful tool to have, including a templated one, there are three main solutions:
+Even though in that context, \tcode{empty_base}, \tcode{is_instantiable}, and \tcode{is_inheritable} can be related to \tcode{inherit_if}, they can be seen as independent and relying on other motivations. Checking if one can derive from a type or not is a useful information by itself, and that is the reason behind \tcode{is_inheritable}. Then, as shown by the last block of code, \tcode{inherit_if}, as many other tools that can be developed in the metaprogramming world, requires an empty class. Since C++17, the standard proposes such as class: \tcode{monostate} in the \tcode{<variant>} header. As an empty class is a very useful tool to have, including a templated one, there are three main solutions:
 \begin{itemize}
 \item make \tcode{monostate} the universally accepted empty class provided by the standard library by putting it in a less specific header such as \tcode{<type_traits>} or \tcode{<utility>}
 \item keep \tcode{monostate} specific to \tcode{variant} and introduce a new universally accepted empty class provided by the standard library such as \tcode{blank} (the name being inspired from \href{https://www.boost.org/doc/libs/1_66_0/boost/blank.hpp}{The Boost C++ Libraries}), and introduce a templated version
@@ -433,8 +433,8 @@ While some names are straightforward and follow existing patterns in standard li
 \item \tcode{clone_*}
 \item \tcode{copy_signedness}
 \item \tcode{empty_base}
-\item \tcode{is_inheritable}
 \item \tcode{is_instantiable}
+\item \tcode{is_inheritable}
 \item \tcode{inherit_if}
 \item \tcode{type_t}
 \item \tcode{false_v}
@@ -515,13 +515,13 @@ namespace std {
     inline constexpr bool is_callable_v = is_callable<T>::value;
     
     // \ref{meta.unary.prop}, type properties
-    template <class T> struct is_inheritable;
     template <class T> struct is_instantiable;
+    template <class T> struct is_inheritable;
 
     template <class T>
-    inline constexpr bool is_inheritable_v = is_inheritable<T>::value;
-    template <class T>
     inline constexpr bool is_instantiable_v = is_instantiable<T>::value;
+    template <class T>
+    inline constexpr bool is_inheritable_v = is_inheritable<T>::value;
     
     // \ref{meta.unary.prop.query}, type property queries
     
@@ -702,14 +702,14 @@ Add the following to the table ``Type property predicates'':
 \lhdr{Template} &   \chdr{Condition}    &   \rhdr{Preconditions}    \\ \capsep
 \endhead
 
-\indexlibrary{\idxcode{is_inheritable}}%
-\tcode{template<class T>\br struct is_inheritable;} &
-It is possible to create a class \tcode{U} for which \tcode{is_base_of_v<T, U>} is \tcode{true}. &
-\\ \rowsep
-
 \indexlibrary{\idxcode{is_instantiable}}%
 \tcode{template<class T>\br struct is_instantiable;} &
 It is possible to instantiate an object of type \tcode{T}. &
+\\ \rowsep
+
+\indexlibrary{\idxcode{is_inheritable}}%
+\tcode{template<class T>\br struct is_inheritable;} &
+It is possible to create a class \tcode{U} for which \tcode{is_base_of_v<T, U>} is \tcode{true}. &
 \\
 \end{libreqtab3b}
 %% -------------------------------------------------------------------------- %%
