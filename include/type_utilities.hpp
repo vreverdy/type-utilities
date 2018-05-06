@@ -44,9 +44,9 @@ namespace type_utilities {
 struct _argument
 {
     template <class T>
-    constexpr operator T&() const& noexcept;
+    constexpr operator T&() const noexcept;
     template <class T>
-    constexpr operator T&&() const&& noexcept;
+    constexpr operator T&&() const noexcept;
 };
 
 // Computes the minimum arity of a functor
@@ -401,9 +401,10 @@ using clone_cvref_t = typename clone_cvref<From, To>::type;
 
 
 
-/* ************************* CONDITIONAL INHERITANCE ************************ */
-// A universal empty class
-struct blank
+/* ******************************* INHERITANCE ****************************** */
+// An empty base class
+template <class...>
+struct empty_base
 {
 };
 
@@ -414,23 +415,33 @@ struct is_inheritable
 {
 };
 
+// Checks if a type is instantiable
+template <class T>
+struct is_instantiable
+: std::bool_constant<!std::is_abstract_v<T>>
+{
+    /* Note: this is a partial implementation and may fail in edge use cases */
+};
+
 // Inherits from a type if a condition is met
 template <bool Condition, class T>
 struct inherit_if
 {
-    using type = std::conditional_t<Condition, T, blank>;
+    using type = std::conditional_t<Condition, T, empty_base<T>>;
 };
 
 // Type alias and variable template
 template <class T>
 inline constexpr bool is_inheritable_v = is_inheritable<T>::value;
+template <class T>
+inline constexpr bool is_instantiable_v = is_instantiable<T>::value;
 template <bool Condition, class T>
 using inherit_if_t = typename inherit_if<Condition, T>::type;
 /* ************************************************************************** */
 
 
 
-/* ************************ CALLABLES CATEGORIZATION ************************ */
+/* ************************ CALLABLE CATEGORIZATION ************************* */
 // Closure type detection according to [expr.prim.lambda.closure]
 template <class T>
 struct is_closure
@@ -447,12 +458,19 @@ struct is_functor
     /* Note: this is a partial implementation and may fail in edge use cases */
 };
 
+// Function pointer type detection
+template <class T>
+struct is_function_pointer
+: std::bool_constant<
+    std::is_pointer_v<T> && std::is_function_v<std::remove_pointer_t<T>>
+>
+{
+};
+
 // Function object type detection according to [function.objects]
 template <class T>
 struct is_function_object
-: std::bool_constant<is_functor<T>::value || (
-    std::is_pointer_v<T> && std::is_function_v<std::remove_pointer_t<T>>
-)>
+: std::bool_constant<is_functor<T>::value || is_function_pointer<T>::value>
 {
 };
 
@@ -472,6 +490,8 @@ template <class T>
 inline constexpr bool is_closure_v = is_closure<T>::value;
 template <class T>
 inline constexpr bool is_functor_v = is_functor<T>::value;
+template <class T>
+inline constexpr bool is_function_pointer_v = is_function_pointer<T>::value;
 template <class T>
 inline constexpr bool is_function_object_v = is_function_object<T>::value;
 template <class T>
