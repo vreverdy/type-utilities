@@ -1,0 +1,276 @@
+%% ================== ISO WG21 C++ PROPOSAL: TYPE UTILITIES ================= %%
+%% Project:         Type Utilities
+%% Name:            p1081r0.tex
+%% Description:     On empty structs in the standard library
+%% Creator:         Vincent Reverdy
+%% Contributors:    Vincent Reverdy [2018]
+%% License:         BSD 3-Clause License
+%% ========================================================================== %%
+
+
+
+%% =============================== PARAMETERS =============================== %%
+% DOCUMENT PARAMETERS
+\newcommand{\docno}{P1081R0}
+\newcommand{\prevdocno}{}%{P1081R0}
+\newcommand{\doctitle}{On empty structs in the standard library}
+\newcommand{\docauthor}{Vincent Reverdy}
+\newcommand{\doccoauthor}{Collin Gress}
+\newcommand{\presfile}{p1081r0_presentation.pdf}
+\newcommand{\reldate}{\today}
+\newcommand{\firstlibchapter}{language.support}
+\newcommand{\lastlibchapter}{thread}
+%% ========================================================================== %%
+
+
+
+%% ============================== CONFIGURATION ============================= %%
+% DOCUMENT TYPE 
+% \documentclass[letterpaper,oneside,openany]{memoir}
+\documentclass[ebook,10pt,oneside,openany,final]{memoir}
+% \includeonly{declarations}
+
+% PACKAGES
+\usepackage[american]{babel}
+\usepackage[iso,american]{isodate}
+\usepackage[final]{listings}
+\usepackage{longtable}
+\usepackage{ltcaption}
+\usepackage{relsize}
+\usepackage{textcomp}
+\usepackage{underscore}
+\usepackage{parskip}
+\usepackage{array}
+\usepackage[normalem]{ulem}
+\usepackage{enumitem}
+\usepackage{color}
+\usepackage{amsmath}
+\usepackage{mathrsfs}
+\usepackage{microtype}
+\usepackage{multicol}
+\usepackage{xspace}
+\usepackage{lmodern}
+\usepackage[T1]{fontenc}
+\usepackage[pdftex, final]{graphicx}
+\usepackage[final]{pdfpages}
+\usepackage[pdftex,
+            pdftitle={\docno},
+            pdfsubject={\doctitle},
+            pdfcreator={\docauthor},
+            bookmarks=true,
+            bookmarksnumbered=true,
+            pdfpagelabels=true,
+            pdfpagemode=UseOutlines,
+            pdfstartview=FitH,
+            linktocpage=true,
+            colorlinks=true,
+            linkcolor=blue,
+            plainpages=false
+           ]{hyperref}
+\usepackage{memhfixc}
+\usepackage[active,
+            header=false,
+            handles=false,
+            copydocumentclass=false,
+            generate=std-gram.ext,
+            extract-cmdline={gramSec},
+            extract-env={bnftab,simplebnf,bnf,bnfkeywordtab}
+            ]{extract}
+
+% COMMANDS
+\renewcommand\RSsmallest{5.5pt}
+
+% STYLE
+\input{layout}
+\input{styles}
+\input{macros}
+\input{tables}
+
+% INDEX
+\makeindex[generalindex]
+\makeindex[libraryindex]
+\makeindex[grammarindex]
+\makeindex[impldefindex]
+\makeglossary[xrefindex]
+
+% HYPERREF FIXES
+\pdfstringdefDisableCommands{\def\smaller#1{#1}}
+\pdfstringdefDisableCommands{\def\textbf#1{#1}}
+\pdfstringdefDisableCommands{\def\raisebox#1{}}
+\pdfstringdefDisableCommands{\def\hspace#1{}}
+
+% HYPHENATION
+\hyphenation{tem-plate ex-am-ple in-put-it-er-a-tor name-space non-zero}
+
+% LIGATURES
+\DisableLigatures{encoding = T1, family = tt*}
+
+% TABLES
+\newenvironment{libreqtab2b}[2]
+{
+ \begin{LongTable}
+ {#1}{#2}
+ {x{.34\hsize}x{.60\hsize}}
+}
+{
+ \end{LongTable}
+}
+%% ========================================================================== %%
+
+
+
+%% ================================ DOCUMENT ================================ %%
+% DOCUMENT BEGINNING
+\begin{document}
+
+\thispagestyle{empty}
+\begingroup
+\def\hd{%
+    \begin{tabular}{ll}
+    \textbf{Document number:} & \docno \\
+    \textbf{Revises:}         & \prevdocno \\
+    \textbf{Date:}            & \reldate \\
+    \textbf{Project:}         & ISO JTC1/SC22/WG21: Programming Language C++ \\
+    \textbf{Audience:}        & LEWG \\
+    \textbf{Reply to:}        & \docauthor~{}and \doccoauthor \\
+                              & University of Illinois at Urbana-Champaign \\
+                              & vince.rev@gmail.com
+    \end{tabular}
+}
+\newlength{\hdwidth}
+\settowidth{\hdwidth}{\hd}
+\begin{minipage}{\hdwidth}\hd\end{minipage}
+\endgroup
+
+\vspace{2.5cm}
+\begin{center}
+\textbf{\Huge\doctitle}
+\end{center}
+\vfill
+\textbf{Note: this is an early draft. It's known to be incomplet and
+  incorrekt, and it has lots of
+  b\kern-1.2pta\kern1ptd\hspace{1.5em}for\kern-3ptmat\kern0.6ptti\raise0.15ex\hbox{n}g.}
+\newpage
+
+\chapterstyle{cppstd}
+\pagestyle{cpppage}
+%% -------------------------------------------------------------------------- %%
+% FRONT MATTER
+\frontmatter
+
+\chapter*{Abstract}
+In this short paper, we discuss the need for empty structs in the standard library as multipurpose helper classes, and the different design options available.
+
+\phantomsection
+\setcounter{tocdepth}{2}
+\pdfbookmark{\contentsname}{toctargret}
+\hypertarget{toctarget}{\tableofcontents*}
+%% -------------------------------------------------------------------------- %%
+% MAIN MATTER
+\mainmatter
+\setglobalstyles
+%% -------------------------------------------------------------------------- %%
+% PROPOSAL
+\rSec0[proposal]{Proposal}
+%% -------------------------------------------------------------------------- %%
+\rSec1[proposal.problem]{The problem}
+An empty structure such as:
+\begin{codeblock}
+struct empty_struct {};
+\end{codeblock}
+is a general purpose utility that can be used in many situations. Examples include a default type in contexts requiring a class, a blank type for variant, a default tag class, and an empty base class. The \href{https://www.boost.org/doc/libs/1_67_0/boost/blank.hpp}{Boost} libraries provide a structure called \tcode{blank} for this purpose. In C++17, the standard library provides two main empty structures:
+\begin{itemize}
+\item \tcode{tuple<>}: however, this is not a ``perfectly'' basic empty structure since it has a member function \tcode{swap} and tuple-related functions have been specialized on it
+\item \tcode{monostate}: however, it is currently considered to be a variant helper class, and is put in \tcode{<variant>} accordingly
+\end{itemize}
+As a consequence the standard library currently lacks a universal ``default'' empty structure. It also lacks a way to transform any type, or sequence of types into an empty structure. An example of use is conditional inheritance:
+\begin{codeblock}
+// Basic empty struct
+struct empty_struct {};
+
+// A base class
+struct base {/* something */};
+
+// A class derived from the base if T satisfies something
+template <class T>
+struct derived: conditional_t<
+    is_integral_v<T>,
+    base,
+    empty_struct
+> {/* something */};
+
+// A class derived from the base if T... satisfy something
+template <class... T>
+struct multi_derived: conditional_t<
+    is_integral_v<T>,
+    base,
+    empty_struct
+>... {/* something */}; // Will fail
+
+// A template empty struct
+template <class... T>
+struct empty_struct_template {};
+
+// A class derived from the base if T... satisfy something
+template <class... T>
+struct multi_derived: conditional_t<
+    is_integral_v<T>,
+    base,
+    empty_struct_template<T>
+>... {/* something */}; // Will work
+\end{codeblock}
+
+But is a ``universal'' empty structure even desirable, and what are the different possible options in terms of design?
+%% -------------------------------------------------------------------------- %%
+\rSec1[proposal.solutions]{Design options}
+
+There are a few possible solutions:
+\begin{itemize}
+\item Do nothing and do not introduce a ``universal'' empty structure: let users keep creating their own.
+\item Make \tcode{monostate} the ``universal'' empty structure: in this case it has to be transfered from \tcode{<variant>} to \tcode{<type_traits>} or \tcode{<utility>}. What about the template version?
+\item Add a new empty structure for each new use case that is being standardized: for example, for conditional inheritance introduce a new \tcode{empty_base} and \tcode{empty_base_template} (or similar) in \tcode{<type_traits>} or \tcode{<utility>}. In that case, should \tcode{empty_base} be defined as a type alias for \tcode{empty_base_template<>}? 
+\item Add a new ``universal'' empty structure, with a different name than \tcode{monostate} in \tcode{<type_traits>} or \tcode{<utility>} such as \tcode{empty_struct} and \tcode{empty_struct_template} (or similar). In that case, should \tcode{empty_struct} be defined as a type alias for \tcode{empty_struct_template<>}?
+\end{itemize}
+
+In any case, the names of the template and non-template versions of a ``universal'' empty structure have to be bikeshedded. Examples of names include: \tcode{empty_struct}, \tcode{empty_base}, \tcode{empty_tag}, \tcode{empty}, \tcode{blank}, \tcode{nothing}, \tcode{none}, \tcode{null}, \tcode{nil}, \tcode{vacant}, \tcode{primal}\dots
+
+%% -------------------------------------------------------------------------- %%
+\rSec1[proposal.implementation]{Implementation}
+Regardless of the chosen design, and once the name is adjusted, implementation is straightforward and will consist of something along the line of:
+
+\begin{codeblock}
+template <class...> struct empty_struct_template {};    // The template empty struct
+struct empty_struct {};                                 // The non-template empty struct, version 0
+using empty_struct = empty_struct_template<>;           // The non-template empty struct, version 1
+\end{codeblock}
+
+Additional functionalities like comparison operators or hash specialization could also be added to the design.
+%% -------------------------------------------------------------------------- %%
+\rSec1[proposal.impact]{Impact on the standard}
+This proposal is a pure library extension. It does not require changes to any standard classes or functions. All the extensions belong to the \tcode{<type_traits>} header or to the \tcode{<utility>} header depending on design choices. Also, depending on the preferred option, \tcode{monostate} may have to be changed from the \tcode{<variant>} header to the \tcode{<type_traits>} header or to the \tcode{<utility>} header.
+%% -------------------------------------------------------------------------- %%
+\rSec1[proposal.acknowledgements]{Acknowledgements}
+
+The authors would like to thank the participants to the related discussion on the \href{https://groups.google.com/a/isocpp.org/forum/#!topic/std-proposals/R04CWOjABIQ}{future-proposals} group. This work has been made possible thanks to the National Science Foundation through the awards CCF-1647432 and SI2-SSE-1642411.
+%% -------------------------------------------------------------------------- %%
+\rSec1[proposal.references]{References}
+
+\href{https://github.com/vreverdy/type-utilities}{A few additional type manipulation utilities}, Vincent Reverdy, \emph{Github} (March 2018)
+
+\href{http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/n4727.pdf}{N4727}, Working Draft, Standard for Programming Language C++, Richard Smith, \emph{ISO/IEC JTC1/SC22/WG21} (February 2018)
+
+\href{https://groups.google.com/a/isocpp.org/forum/#!topic/std-proposals/R04CWOjABIQ}{General purpose utilities for template metaprogramming and type manipulation}, ISO C++ Standard - Future Proposals, \emph{Google Groups} (March 2018)
+
+\href{https://www.boost.org/doc/libs/1_66_0/boost/blank.hpp}{Boost blank}, Eric Friedman, \emph{The Boost C++ Libraries} (2003)
+%% -------------------------------------------------------------------------- %%
+\newpage
+\phantomsection
+\setcounter{chapter}{2}
+\addcontentsline{toc}{chapter}{\protect\numberline{\thechapter}Presentation}
+\includepdf[pages=-,scale=2,fitpaper,templatesize={256mm}{192mm}]{\presfile}
+%% -------------------------------------------------------------------------- %%
+% BACK MATTER
+\backmatter
+\end{document}
+% DOCUMENT END
+%% ========================================================================== %%

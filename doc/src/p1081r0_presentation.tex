@@ -1,0 +1,242 @@
+%% ================== ISO WG21 C++ PROPOSAL: TYPE UTILITIES ================= %%
+%% Project:         Type Utilities
+%% Name:            p1081r0_presentation.tex
+%% Description:     On empty structs in the standard library: presentation
+%% Creator:         Vincent Reverdy
+%% Contributors:    Vincent Reverdy [2018]
+%% License:         BSD 3-Clause License
+%% ========================================================================== %%
+
+
+
+%% =============================== PARAMETERS =============================== %%
+% DOCUMENT PARAMETERS
+\newcommand{\docno}{P1081R0}
+\newcommand{\prevdocno}{}%{P1081R0}
+\newcommand{\doctitle}{On empty structs in the standard library}
+\newcommand{\docauthor}{Vincent Reverdy}
+\newcommand{\doccoauthor}{Collin Gress}
+\newcommand{\reldate}{\today}
+\newcommand{\firstlibchapter}{language.support}
+\newcommand{\lastlibchapter}{thread}
+%% ========================================================================== %%
+
+
+
+%% ============================== CONFIGURATION ============================= %%
+% DOCUMENT TYPE 
+\documentclass[8pt]{beamer}
+
+% THEME
+\usetheme{Frankfurt}
+\useinnertheme{rectangles}
+\setbeamertemplate{blocks}[default]
+
+% PACKAGES
+%\usepackage{packages/fancylayout}
+\usepackage{ragged2e}
+\usepackage{multicol}
+\usepackage{lmodern}
+\usepackage{xcolor}
+\usepackage{csquotes}
+\usepackage{environ}
+\usepackage{stmaryrd}
+\usepackage{sistyle}
+\usepackage[T1]{fontenc}
+\usepackage{pdfpages}
+\usepackage{comment}
+\usepackage{listings}
+\usepackage{makecell}
+\usepackage{hyperref}
+\usepackage{titling}
+\usepackage{tikz}
+\usepackage{tikzsymbols}
+\usetikzlibrary{calc,positioning,arrows.meta}
+\beamertemplatenavigationsymbolsempty
+
+% INFORMATION
+\title{\doctitle}
+\author{\docauthor \\ \doccoauthor}
+\date{}
+
+% LISTINGS
+\lstset{
+    language=C++,
+    basicstyle=\ttfamily,
+    aboveskip=0pt,
+    belowskip=0pt,
+    morekeywords={constexpr,noexcept,decltype},
+    keywordstyle=\color{blue},
+    commentstyle=\color[RGB]{0,128,0},
+    showstringspaces=false
+}
+
+% NOTEBLOCK
+\newcounter{notecounter}
+\newenvironment<>{noteblock}[1]{%
+\stepcounter{notecounter}%
+\setbeamercolor{block title}{fg=white,bg=orange}%
+\setbeamercolor{itemize item}{fg=orange!75!yellow}%
+\begin{block}#2{#1}}{\end{block}}
+%% ========================================================================== %%
+
+
+
+%% ================================ DOCUMENT ================================ %%
+\begin{document}
+%% -------------------------------------------------------------------------- %%
+\section*{Introduction}
+\subsection{Introduction}
+\frame{\titlepage}
+%% -------------------------------------------------------------------------- %%
+\section*{Overview}
+\subsection{Overview}
+\begin{frame}[fragile]{Overview}
+\begin{block}{Summary}
+\justifying
+A ``universal'' default empty structure is useful in multiple contexts. The standard library currently does not have one.
+\end{block}
+\vspace{-0.5\baselineskip}
+\begin{exampleblock}{Examples}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+// Variant
+struct monostate {}; // empty struct
+struct S {S(int i) : i(i) {} int i;};
+variant<monostate, S> variant;
+
+// Conditional inheritance
+struct empty_base {}; // empty struct
+template <class T> struct derived
+: conditional_t<is_class_v<T> && !is_final_v<T>, T, empty_base> {};
+
+// Need for a template version
+template <class...> struct empty_base_template {}; // empty struct
+template <class... T> struct derived
+: conditional_t<is_class_v<T> && !is_final_v<T>, T, empty_base_template<T>>... {};
+\end{lstlisting}
+\end{exampleblock}
+\vspace{-0.5\baselineskip}
+\begin{alertblock}{Currently}
+\vspace{-0.5\baselineskip}
+\begin{itemize}
+\item \lstinline{tuple<>}: in \lstinline{<tuple>}, has a \lstinline{swap} member, is not intended to be a ``universal'' empty structure 
+\item \lstinline{monostate}: in \lstinline{<variant>}, is considered to be a helper class for \lstinline{variant}
+\item \lstinline{blank}: the ``universal'' empty structure of the \href{https://www.boost.org/doc/libs/1_66_0/boost/blank.hpp}{Boost} libraries
+\end{itemize}
+\vspace{-0.5\baselineskip}
+\end{alertblock}
+\vspace{-0.5\baselineskip}
+\begin{block}{Question}
+\justifying
+Need for a ``universal'' empty structure in \lstinline{<type_traits>} or \lstinline{<utility>}?
+\end{block}
+\end{frame}
+%% -------------------------------------------------------------------------- %%
+\section*{Design}
+\subsection{Design}
+\begin{frame}[fragile]{Design options}
+\begin{block}{Option 1: do nothing}
+\justifying
+Do nothing and do not introduce a ``universal'' empty structure: let users keep creating their own.
+\end{block}
+\begin{block}{Option 2: promote monostate}
+\justifying
+Make \lstinline{monostate} the ``universal'' empty structure and transfer it from \lstinline{<variant>} to \lstinline{<type_traits>} or \lstinline{<utility>}.
+\end{block}
+\begin{block}{Option 3: one empty structure per use case}
+\justifying
+Add a new empty structure for each new use case that is being standardized such as a new \lstinline{empty_base} for conditional inheritance.
+\end{block}
+\begin{block}{Option 4: a universal empty structure on top of monostate}
+\justifying
+Add a new ``universal'' empty structure, with a different name than \lstinline{monostate} in \lstinline{<type_traits>} or \lstinline{<utility>}.
+\end{block}
+\end{frame}
+
+\begin{frame}[fragile]{Design of the template version}
+\begin{exampleblock}{Motivation}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+// Need for a template version
+template <class...> struct empty_base_template {};
+template <class... T> struct derived
+: conditional_t<is_class_v<T> && !is_final_v<T>, T, empty_base_template<T>>... {};
+\end{lstlisting}
+\end{exampleblock}
+\begin{block}{Design question}
+\vspace{-0.5\baselineskip}
+\begin{itemize}
+\item \lstinline!struct empty_struct {}!: the non-template and the template versions are two independent structures
+\item \lstinline!using empty_struct = empty_struct_template<>!: the non-template version is an alias of the template version
+\end{itemize}
+\vspace{-0.5\baselineskip}
+\end{block}
+\end{frame}
+%% -------------------------------------------------------------------------- %%
+\section*{Conclusion}
+\subsection{Conclusion}
+
+\begin{frame}[fragile]{Conclusion}
+\vspace{-0.5\baselineskip}
+\begin{noteblock}{What option?}
+\vspace{-0.5\baselineskip}
+\begin{itemize}
+\item Option 1: do nothing
+\item Option 2: promote monostate
+\item Option 3: one empty structure per use case
+\item Option 4: a universal empty structure on top of monostate
+\end{itemize}
+\vspace{-0.5\baselineskip}
+\end{noteblock}
+\vspace{-0.5\baselineskip}
+\begin{noteblock}{Non-template and template versions}
+\vspace{-0.5\baselineskip}
+\begin{itemize}
+\item the non-template and the template versions are two independent structures?
+\item the non-template version is an alias of the template version?
+\end{itemize}
+\vspace{-0.5\baselineskip}
+\end{noteblock}
+\vspace{-0.5\baselineskip}
+\begin{block}{Bikeshedding}
+\vspace{-1.\baselineskip}
+\begin{multicols}{3}
+\begin{itemize}
+\item \lstinline{empty_struct}
+\item \lstinline{empty}
+\item \lstinline{blank}
+\item \lstinline{nothing}
+\item \lstinline{none}
+\item \lstinline{null}
+\item \lstinline{nil}
+\item \lstinline{vacant}
+\item \lstinline{primal}
+\end{itemize}
+\end{multicols}
+\vspace{-1.\baselineskip}
+\begin{itemize}
+\item \dots and what about the template version?
+\end{itemize}
+\vspace{-0.5\baselineskip}
+\end{block}
+\vspace{-0.5\baselineskip}
+\begin{noteblock}{Additional functionalities}
+\vspace{-0.5\baselineskip}
+\begin{itemize}
+\item Comparison operators?
+\item Hash specialization?
+\end{itemize}
+\vspace{-0.5\baselineskip}
+\end{noteblock}
+\end{frame}
+
+\begin{frame}
+\vfill
+\centering
+\begin{beamercolorbox}[sep=8pt,center,shadow=true,rounded=true]{title}
+    \usebeamerfont{title}Thank you for your attention\par%
+\end{beamercolorbox}
+\vfill  
+\end{frame}
+%% -------------------------------------------------------------------------- %%
+\end{document}
+%% ========================================================================== %%
